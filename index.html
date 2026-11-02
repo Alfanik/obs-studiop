@@ -3,82 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Live Overlay Studio - Ultimate</title>
+    <title>OBS Live Overlay Studio Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        obs: {
+                            dark: '#080c14',
+                            card: '#111827',
+                            panel: '#151d30',
+                            border: '#243049',
+                            accent: '#6366f1',
+                            accentHover: '#4f46e5'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Montserrat:wght@700;900&family=Press+Start+2P&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+
     <style>
-        body.obs-overlay-mode { background-color: transparent !important; overflow: hidden; }
-        .draggable-item { cursor: move; user-select: none; touch-action: none; position: absolute; will-change: transform, left, top; }
-        .draggable-item:hover { outline: 2px dashed #6366f1; outline-offset: 4px; }
-        .text-outline-dark { text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0px 4px 12px rgba(0,0,0,0.9); }
+        body.obs-overlay-mode {
+            background-color: transparent !important;
+            overflow: hidden;
+        }
+
+        .text-outline-dark {
+            text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0px 4px 12px rgba(0,0,0,0.9);
+        }
+        .text-outline-glow {
+            text-shadow: 0 0 15px rgba(99, 102, 241, 0.9), 0 0 30px rgba(99, 102, 241, 0.5), -2px -2px 0 #000, 2px 2px 0 #000;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #080c14; }
+        ::-webkit-scrollbar-thumb { background: #243049; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3b4c6e; }
+
+        .draggable-item {
+            cursor: move;
+            user-select: none;
+            touch-action: none;
+            position: absolute;
+            will-change: transform, left, top;
+        }
+        .draggable-item:hover {
+            outline: 2px dashed #6366f1;
+            outline-offset: 4px;
+        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased">
+<body class="bg-obs-dark text-slate-100 font-sans min-h-screen antialiased flex flex-col selection:bg-indigo-600 selection:text-white">
 
-    <header id="main-header" class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-2xl">
+    <header id="main-header" class="bg-obs-card/90 backdrop-blur border-b border-obs-border px-6 py-3.5 sticky top-0 z-50 flex items-center justify-between shadow-2xl">
         <div class="flex items-center gap-3">
-            <div class="bg-indigo-600 text-white p-2.5 rounded-xl font-bold shadow-lg shadow-indigo-600/30">
-                <i class="fa-solid fa-tower-broadcast text-lg"></i>
+            <div class="bg-indigo-600 text-white p-2 rounded-xl font-black text-lg flex items-center justify-center w-10 h-10 shadow-lg shadow-indigo-600/30">
+                <i class="fa-solid fa-tower-broadcast"></i>
             </div>
             <div>
-                <h1 class="font-extrabold text-sm tracking-wide uppercase text-white">OBS Overlay Studio</h1>
-                <p class="text-[11px] text-slate-400">Идеальный движок без лагов и сбросов видео</p>
+                <h1 class="font-extrabold text-sm tracking-wider uppercase text-white leading-tight">OBS LIVE OVERLAY STUDIO</h1>
+                <p class="text-[11px] text-slate-400">Пульт Модератора & Облачный Оверлей</p>
             </div>
         </div>
-        <button onclick="copyOverlayLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer shadow-lg shadow-indigo-600/20 transition flex items-center gap-2">
-            <i class="fa-solid fa-link"></i> Скопировать ссылку для OBS
-        </button>
+
+        <div class="flex items-center gap-4">
+            <div class="hidden sm:flex items-center gap-2 bg-emerald-950/60 border border-emerald-500/40 px-3.5 py-1.5 rounded-full text-xs font-medium text-emerald-400">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Синхронизация активна</span>
+            </div>
+
+            <button onclick="copyOverlayLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-indigo-600/20 cursor-pointer">
+                <i class="fa-solid fa-link"></i>
+                <span>Ссылка OBS</span>
+            </button>
+        </div>
     </header>
 
-    <main class="flex-1 flex flex-col relative overflow-hidden p-6">
-        <div id="view-operator" class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1920px] mx-auto w-full">
+    <main class="flex-1 flex flex-col relative overflow-hidden">
+        
+        <div id="view-operator" class="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-y-auto max-w-[1920px] mx-auto w-full">
             
-            <div class="lg:col-span-8 flex flex-col gap-4">
-                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="font-bold text-xs uppercase tracking-wider text-slate-300">Предпросмотр сцены</h2>
-                        <span class="text-[11px] text-indigo-400"><i class="fa-solid fa-mouse"></i> Тяните мышкой • Колесико: масшаб</span>
+            <div class="lg:col-span-7 flex flex-col gap-6">
+                
+                <div class="bg-obs-card border border-obs-border rounded-2xl p-4 shadow-xl flex flex-col">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></span>
+                            <h2 class="font-bold text-xs uppercase tracking-wider text-slate-300">Предпросмотр стрима (16:9)</h2>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <select id="stream-provider" onchange="onStreamProviderChange()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1 text-slate-300 outline-none focus:border-indigo-500">
+                                <option value="twitch">Twitch Embed</option>
+                                <option value="screenshot">Скриншот игры / Фон</option>
+                                <option value="testvideo">Тестовый поток</option>
+                            </select>
+                            <input type="text" id="twitch-channel-input" value="dell11q" onchange="onStreamProviderChange()" placeholder="Канал Twitch" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1 text-slate-200 w-28 outline-none focus:border-indigo-500">
+                        </div>
                     </div>
-                    
-                    <div id="preview-container" class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-slate-800 shadow-inner select-none">
-                        <div class="w-full h-full absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(#312e81_1px,transparent_1px)] [background-size:20px_20px]"></div>
+
+                    <div id="preview-container" class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-slate-800 shadow-inner group select-none">
+                        <div id="preview-bg-holder" class="w-full h-full pointer-events-none">
+                            <iframe id="twitch-frame" src="https://player.twitch.tv/?channel=dell11q&parent=localhost&muted=true" class="w-full h-full border-0 pointer-events-auto"></iframe>
+                        </div>
+
+                        <!-- Холст пульта модератора -->
                         <div id="operator-overlay-canvas" class="absolute inset-0 z-20 overflow-hidden pointer-events-auto"></div>
+
+                        <div class="absolute top-3 right-3 z-30 flex items-center gap-2">
+                            <label class="bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer backdrop-blur shadow flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-camera text-indigo-400"></i> Загрузить фон стрима
+                                <input type="file" accept="image/*" class="hidden" onchange="uploadCustomBackground(event)">
+                            </label>
+                        </div>
+
+                        <div class="absolute bottom-3 left-3 z-30 bg-slate-900/90 border border-slate-700/80 px-3 py-1 rounded-lg text-[11px] text-slate-300 backdrop-blur pointer-events-none flex items-center gap-1.5">
+                            <i class="fa-solid fa-hand-pointer text-indigo-400"></i> Перетаскивайте мышкой • Колесико: масштаб
+                        </div>
                     </div>
                 </div>
+
+                <div class="bg-obs-card border border-obs-border rounded-2xl p-4 shadow-xl flex-1 flex flex-col">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-indigo-400"></i>
+                            <h2 class="font-bold text-xs uppercase tracking-wider text-slate-300">Активные элементы</h2>
+                            <span id="active-count-badge" class="bg-indigo-900/60 border border-indigo-500/40 text-indigo-300 text-xs px-2 py-0.5 rounded-full font-mono">0</span>
+                        </div>
+
+                        <button onclick="clearAllOverlays()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/30 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-trash-can"></i> Очистить всё
+                        </button>
+                    </div>
+
+                    <div id="active-elements-list" class="flex-1 min-h-[140px] max-h-[260px] overflow-y-auto space-y-2 pr-1">
+                        <div id="empty-active-state" class="h-full flex flex-col items-center justify-center p-6 text-center text-slate-500 border border-dashed border-slate-700/60 rounded-xl">
+                            <i class="fa-solid fa-ghost text-3xl mb-2 text-slate-600"></i>
+                            <p class="text-xs">Экран пуст. Добавьте элемент из панели справа.</p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="lg:col-span-4 flex flex-col gap-4">
-                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
-                    <h2 class="font-bold text-xs uppercase tracking-wider text-slate-300">Добавить контент</h2>
+            <div class="lg:col-span-5 flex flex-col gap-6">
+                
+                <div class="bg-obs-card border border-obs-border rounded-2xl p-5 shadow-xl flex flex-col">
                     
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 mb-1">Текст на экран</label>
-                        <input type="text" id="text-input" placeholder="Привет стрим! 🔥" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500">
-                        <button onclick="addTextElement()" class="w-full mt-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer shadow-lg transition">Добавить текст</button>
+                    <div class="flex border-b border-slate-700/80 mb-5 gap-2 overflow-x-auto pb-1">
+                        <button id="tab-btn-text" onclick="switchControlTab('text')" class="px-3 py-2 text-xs font-bold border-b-2 border-indigo-500 text-white flex items-center gap-1.5 transition cursor-pointer">
+                            <i class="fa-solid fa-font text-indigo-400"></i> Текст
+                        </button>
+                        <button id="tab-btn-image" onclick="switchControlTab('image')" class="px-3 py-2 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition cursor-pointer">
+                            <i class="fa-solid fa-image text-emerald-400"></i> Картинка
+                        </button>
+                        <button id="tab-btn-video" onclick="switchControlTab('video')" class="px-3 py-2 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition cursor-pointer">
+                            <i class="fa-solid fa-video text-purple-400"></i> Видео
+                        </button>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 mb-1">Прямая ссылка на видео (MP4 / WebM)</label>
-                        <input type="url" id="video-url-input" placeholder="https://site.com/video.mp4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-purple-500">
-                        <button onclick="addVideoElement()" class="w-full mt-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer shadow-lg transition">Добавить видео</button>
+                    <!-- TAB 1: TEXT -->
+                    <div id="tab-content-text" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Текст оверлея</label>
+                            <textarea id="text-input" rows="3" placeholder="Введите текст..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none">ПРИВЕТ СТРИМ! 🔥</textarea>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Размер</label>
+                                <select id="text-size" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
+                                    <option value="text-2xl">Маленький</option>
+                                    <option value="text-4xl" selected>Средний</option>
+                                    <option value="text-6xl">Большой</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Цвет</label>
+                                <input type="color" id="text-color" value="#ffffff" class="w-full h-8 rounded cursor-pointer bg-slate-900 border border-slate-700 px-1">
+                            </div>
+                        </div>
+
+                        <button onclick="createNewTextOverlay()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm mt-4 cursor-pointer">
+                            <i class="fa-solid fa-plus"></i> Создать текстовый блок
+                        </button>
                     </div>
 
-                    <button onclick="clearAll()" class="w-full bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/30 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition mt-2">
-                        Очистить всё
-                    </button>
+                    <!-- TAB 2: IMAGE -->
+                    <div id="tab-content-image" class="space-y-4 hidden">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Прямая ссылка на картинку / GIF</label>
+                            <input type="url" id="image-url-input" placeholder="https://site.com/image.png" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                        </div>
+                        <button onclick="sendImageUrlOverlay()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer">
+                            <i class="fa-solid fa-image"></i> Вывести изображение
+                        </button>
+                    </div>
+
+                    <!-- TAB 3: VIDEO -->
+                    <div id="tab-content-video" class="space-y-4 hidden">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Прямая ссылка на видео (MP4 / WebM)</label>
+                            <input type="url" id="video-url-input" placeholder="https://site.com/video.mp4" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Громкость (%)</label>
+                            <input type="range" id="video-volume" min="0" max="100" value="80" class="w-full accent-purple-500">
+                        </div>
+                        <button onclick="sendVideoUrlOverlay()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer">
+                            <i class="fa-solid fa-video"></i> Вывести видео
+                        </button>
+                    </div>
+
                 </div>
+
             </div>
 
         </div>
 
+        <!-- Холст для OBS (прозрачный) -->
         <div id="view-overlay" class="hidden absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
             <div id="obs-render-canvas" class="relative w-full h-full"></div>
         </div>
+
     </main>
 
     <script>
-        const STORAGE_KEY = "obs_ultimate_state_v3";
-        const bc = new BroadcastChannel('obs_ultimate_sync');
+        const STORAGE_KEY = "obs_live_studio_v4";
+        const bc = new BroadcastChannel('obs_studio_sync');
         let activeOverlays = [];
 
         let isDragging = false;
@@ -87,20 +244,18 @@
         let elementStartX = 0, elementStartY = 0;
 
         window.onload = function() {
-            const params = new URLSearchParams(window.location.search);
-            const isOverlay = params.get('mode') === 'overlay';
+            const urlParams = new URLSearchParams(window.location.search);
+            const modeParam = urlParams.get('mode');
 
-            if (isOverlay) {
-                document.body.classList.add('obs-overlay-mode');
-                document.getElementById('main-header').classList.add('hidden');
-                document.getElementById('view-operator').classList.add('hidden');
-                document.getElementById('view-overlay').classList.remove('hidden');
+            if (modeParam === 'overlay') {
+                switchView('overlay');
+            } else {
+                switchView('operator');
             }
 
-            // Загружаем начальное состояние
             loadState();
 
-            // Синхронизация через BroadcastChannel (мгновенно между вкладками)
+            // Мгновенная синхронизация между вкладками
             bc.onmessage = (event) => {
                 if (event.data.type === 'SYNC') {
                     activeOverlays = event.data.state;
@@ -108,7 +263,7 @@
                 }
             };
 
-            // Защита через localStorage для OBS оверлея
+            // Синхронизация через localStorage для OBS
             window.addEventListener('storage', (e) => {
                 if (e.key === STORAGE_KEY) {
                     try {
@@ -141,35 +296,72 @@
             reconcileScene();
         }
 
-        function addTextElement() {
-            const text = document.getElementById('text-input').value.trim();
-            if (!text) return;
+        function switchView(mode) {
+            const header = document.getElementById('main-header');
+            const viewOp = document.getElementById('view-operator');
+            const viewOv = document.getElementById('view-overlay');
+
+            if (mode === 'overlay') {
+                document.body.classList.add('obs-overlay-mode');
+                header.classList.add('hidden');
+                viewOp.classList.add('hidden');
+                viewOv.classList.remove('hidden');
+            } else {
+                document.body.classList.remove('obs-overlay-mode');
+                header.classList.remove('hidden');
+                viewOp.classList.remove('hidden');
+                viewOv.classList.add('hidden');
+            }
+        }
+
+        function createNewTextOverlay() {
+            const textVal = document.getElementById('text-input').value.trim() || 'Текст';
             activeOverlays.push({
                 id: 'el_' + Date.now(),
                 type: 'text',
-                content: text,
+                content: textVal,
+                size: document.getElementById('text-size').value,
+                color: document.getElementById('text-color').value,
                 scale: 1,
-                x: 50, y: 50
+                x: 50,
+                y: 50
             });
-            document.getElementById('text-input').value = '';
             saveAndSync();
         }
 
-        function addVideoElement() {
+        function sendImageUrlOverlay() {
+            const url = document.getElementById('image-url-input').value.trim();
+            if (!url) return;
+            activeOverlays.push({
+                id: 'el_' + Date.now(),
+                type: 'image',
+                url: url,
+                scale: 1,
+                x: 50,
+                y: 50
+            });
+            document.getElementById('image-url-input').value = '';
+            saveAndSync();
+        }
+
+        function sendVideoUrlOverlay() {
             const url = document.getElementById('video-url-input').value.trim();
             if (!url) return;
+            const vol = (parseInt(document.getElementById('video-volume').value) || 80) / 100;
             activeOverlays.push({
                 id: 'el_' + Date.now(),
                 type: 'video',
                 url: url,
                 scale: 1,
-                x: 50, y: 50
+                x: 50,
+                y: 50,
+                volume: vol
             });
             document.getElementById('video-url-input').value = '';
             saveAndSync();
         }
 
-        function clearAll() {
+        function clearAllOverlays() {
             activeOverlays = [];
             saveAndSync();
         }
@@ -204,7 +396,6 @@
                 item.x = Math.max(5, Math.min(95, elementStartX + deltaX));
                 item.y = Math.max(5, Math.min(95, elementStartY + deltaY));
 
-                // Мгновенное обновление позиций на экране без пересоздания видео
                 updateNodeStyle(item.id, item.x, item.y, item.scale || 1);
             }
         }
@@ -220,7 +411,7 @@
             if (isDragging) {
                 isDragging = false;
                 dragTargetId = null;
-                saveAndSync(); // Фиксируем в хранилище при отпускании
+                saveAndSync();
             }
         }
 
@@ -244,16 +435,16 @@
             const nodes = document.querySelectorAll(`[data-id="${id}"]`);
             nodes.forEach(node => {
                 node.style.left = x + '%';
-                node.style.top = y + '%';
+                node.style.top = x ? y + '%' : node.style.top;
                 node.style.transform = `translate(-50%, -50%) scale(${scale})`;
             });
         }
 
-        // КЛЮЧЕВОЙ МОМЕНТ: рендер пересоздает DOM-узлы ТОЛЬКО если элемента нет. 
-        // Существующие видео и текст не трогаются, поэтому видео никогда не сбрасывается!
+        // Умный рендер: DOM-элементы (включая видео) создаются ровно 1 раз и не сбрасываются
         function reconcileScene() {
             updateContainer('operator-overlay-canvas', true);
             updateContainer('obs-render-canvas', false);
+            updateActiveList();
         }
 
         function updateContainer(containerId, isInteractive) {
@@ -266,12 +457,10 @@
 
             const activeIds = new Set(activeOverlays.map(i => i.id));
 
-            // Удаляем закрытые элементы
             existingMap.forEach((node, id) => {
                 if (!activeIds.has(id)) node.remove();
             });
 
-            // Добавляем новые или обновляем стили существующих
             activeOverlays.forEach(item => {
                 let node = existingMap.get(item.id);
 
@@ -287,10 +476,14 @@
                     }
 
                     if (item.type === 'text') {
-                        node.innerHTML = `<div class="text-4xl font-black text-center text-outline-dark bg-slate-900/80 px-5 py-2.5 rounded-2xl border border-slate-700/80 text-white shadow-2xl">${escapeHtml(item.content)}</div>`;
+                        node.innerHTML = `<div class="${item.size} font-black text-center text-outline-dark bg-slate-900/80 px-5 py-2.5 rounded-2xl border border-slate-700/80 text-white shadow-2xl">${escapeHtml(item.content)}</div>`;
+                    } else if (item.type === 'image') {
+                        node.innerHTML = `<img src="${escapeHtml(item.url)}" class="max-w-[400px] rounded-2xl shadow-2xl border border-slate-700/80 object-contain">`;
                     } else if (item.type === 'video') {
-                        // Видео создается один раз и работает непрерывно
-                        node.innerHTML = `<video src="${escapeHtml(item.url)}" autoplay loop muted playsinline class="w-[400px] rounded-2xl shadow-2xl border border-slate-700/80 object-cover"></video>`;
+                        // Видео создается один раз и работает без сбросов!
+                        node.innerHTML = `<video src="${escapeHtml(item.url)}" autoplay loop muted playsinline class="max-w-[450px] rounded-2xl shadow-2xl border border-slate-700/80"></video>`;
+                        const vid = node.querySelector('video');
+                        if (vid) vid.volume = item.volume || 0.8;
                     }
                     container.appendChild(node);
                 }
@@ -299,10 +492,86 @@
             });
         }
 
+        function updateActiveList() {
+            const list = document.getElementById('active-elements-list');
+            const badge = document.getElementById('active-count-badge');
+            if (!list || !badge) return;
+
+            badge.innerText = activeOverlays.length;
+            if (activeOverlays.length === 0) {
+                list.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center p-6 text-center text-slate-500 border border-dashed border-slate-700/60 rounded-xl">
+                        <i class="fa-solid fa-ghost text-3xl mb-2 text-slate-600"></i>
+                        <p class="text-xs">Экран пуст. Добавьте элемент из панели справа.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = activeOverlays.map(item => `
+                <div class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl flex items-center justify-between text-xs">
+                    <div class="truncate mr-2">
+                        <span class="font-bold text-indigo-400 uppercase">[${item.type}]</span> 
+                        <span class="text-slate-200">${escapeHtml(item.content || item.url)}</span>
+                    </div>
+                    <button onclick="removeOverlayItem('${item.id}')" class="text-slate-400 hover:text-red-400 p-1 cursor-pointer">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeOverlayItem(id) {
+            activeOverlays = activeOverlays.filter(i => i.id !== id);
+            saveAndSync();
+        }
+
+        function onStreamProviderChange() {
+            const provider = document.getElementById('stream-provider').value;
+            const channelName = document.getElementById('twitch-channel-input').value.trim() || 'dell11q';
+            const bgHolder = document.getElementById('preview-bg-holder');
+
+            if (provider === 'twitch') {
+                const host = window.location.hostname || 'localhost';
+                bgHolder.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channelName}&parent=${host}&muted=true" class="w-full h-full border-0 pointer-events-auto"></iframe>`;
+            } else if (provider === 'screenshot') {
+                bgHolder.innerHTML = `<img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1280&q=80" class="w-full h-full object-cover opacity-60">`;
+            } else if (provider === 'testvideo') {
+                bgHolder.innerHTML = `<video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" autoplay loop muted class="w-full h-full object-cover opacity-50"></video>`;
+            }
+        }
+
+        function uploadCustomBackground(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                document.getElementById('stream-provider').value = 'screenshot';
+                document.getElementById('preview-bg-holder').innerHTML = `<img src="${evt.target.result}" class="w-full h-full object-cover">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function switchControlTab(tab) {
+            ['text', 'image', 'video'].forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const content = document.getElementById(`tab-content-${t}`);
+                if (t === tab) {
+                    btn.classList.add('border-indigo-500', 'text-white');
+                    btn.classList.remove('border-transparent', 'text-slate-400');
+                    content.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('border-indigo-500', 'text-white');
+                    btn.classList.add('border-transparent', 'text-slate-400');
+                    content.classList.add('hidden');
+                }
+            });
+        }
+
         function copyOverlayLink() {
             const url = window.location.origin + window.location.pathname + '?mode=overlay';
             navigator.clipboard.writeText(url);
-            alert('Ссылка для OBS успешно скопирована в буфер обмена!');
+            alert('Ссылка для OBS успешно скопирована!');
         }
 
         function escapeHtml(str) {
