@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Live Overlay Studio - Instant Sync</title>
+    <title>OBS Live Overlay Studio - Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -21,8 +21,8 @@
                 <i class="fa-solid fa-tower-broadcast"></i>
             </div>
             <div>
-                <h1 class="font-bold text-sm uppercase text-white">Пульт Стримера (Мгновенный движок 60 FPS)</h1>
-                <p class="text-[11px] text-slate-400">Без задержек и перезагрузок видео</p>
+                <h1 class="font-bold text-sm uppercase text-white">Пульт Стримера (Стабильный режим OBS)</h1>
+                <p class="text-[11px] text-slate-400">Видео не сбрасывается при масштабировании</p>
             </div>
         </div>
         <button onclick="copyOverlayLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer shadow-lg">
@@ -74,13 +74,14 @@
     </main>
 
     <script>
-        const channel = new BroadcastChannel('obs_instant_sync_channel');
+        const STORAGE_KEY = "obs_stable_overlay_state_v2";
         let activeOverlays = [];
         
         let isDragging = false;
         let dragTargetId = null;
         let dragStartX = 0, dragStartY = 0;
         let elementStartX = 0, elementStartY = 0;
+        let lastLoadedJson = "";
 
         window.onload = function() {
             const params = new URLSearchParams(window.location.search);
@@ -93,16 +94,15 @@
                 document.getElementById('view-overlay').classList.remove('hidden');
             }
 
-            // Слушаем мгновенные сообщения между пультом и оверлеем
-            channel.onmessage = function(event) {
-                if (event.data.type === 'STATE_UPDATE') {
-                    activeOverlays = event.data.state;
-                    reconcileScene();
-                }
-            };
+            loadFromStorage(true);
 
-            // Запрашиваем состояние при старте
-            channel.postMessage({ type: 'REQUEST_SYNC' });
+            // В OBS оверлее проверяем изменения чаще, в пульте реже
+            const intervalTime = isOverlay ? 400 : 1500;
+            setInterval(() => {
+                if (!isDragging) {
+                    loadFromStorage(false);
+                }
+            }, intervalTime);
 
             window.addEventListener('mousemove', onMouseMove);
             window.addEventListener('mouseup', onMouseUp);
@@ -110,10 +110,24 @@
             window.addEventListener('touchend', onMouseUp);
         };
 
-        // Отправка состояния всем вкладкам (включая OBS) мгновенно
-        function broadcastState() {
-            channel.postMessage({ type: 'STATE_UPDATE', state: activeOverlays });
+        function saveToStorage() {
+            const jsonStr = JSON.stringify(activeOverlays);
+            lastLoadedJson = jsonStr;
+            localStorage.setItem(STORAGE_KEY, jsonStr);
             reconcileScene();
+        }
+
+        function loadFromStorage(force = false) {
+            const raw = localStorage.getItem(STORAGE_KEY) || '[]';
+            if (raw !== lastLoadedJson || force) {
+                lastLoadedJson = raw;
+                try {
+                    activeOverlays = JSON.parse(raw);
+                    reconcileScene();
+                } catch(e) {
+                    activeOverlays = [];
+                }
+            }
         }
 
         function addTextElement() {
@@ -126,7 +140,7 @@
                 scale: 1,
                 x: 50, y: 50
             });
-            broadcastState();
+            saveToStorage();
         }
 
         function addVideoElement() {
@@ -139,12 +153,12 @@
                 scale: 1,
                 x: 50, y: 50
             });
-            broadcastState();
+            saveToStorage();
         }
 
         function clearAll() {
             activeOverlays = [];
-            broadcastState();
+            saveToStorage();
         }
 
         function startDrag(e, id) {
@@ -177,7 +191,7 @@
                 item.x = Math.max(5, Math.min(95, elementStartX + deltaX));
                 item.y = Math.max(5, Math.min(95, elementStartY + deltaY));
 
-                // Прямое обновление стилей БЕЗ пересоздания узлов и видео (идеальная плавность!)
+                // Двигаем локально на экране пульта мгновенно
                 updateNodeTransform(item.id, item.x, item.y, item.scale || 1);
             }
         }
@@ -193,7 +207,11 @@
             if (isDragging) {
                 isDragging = false;
                 dragTargetId = null;
-                broadcastState(); // Фиксируем координаты при отпускании
+                // Сохраняем в localStorage строго по окончании перетаскивания, 
+                // чтобы не дергать хранилище каждую миллисекунду
+                const jsonStr = JSON.stringify(activeOverlays);
+                lastLoadedJson = jsonStr;
+                localStorage.setItem(STORAGE_KEY, jsonStr);
             }
         }
 
@@ -210,7 +228,7 @@
             }
 
             updateNodeTransform(item.id, item.x, item.y, item.scale);
-            broadcastState();
+            saveToStorage();
         }
 
         function updateNodeTransform(id, x, y, scale) {
@@ -222,7 +240,7 @@
             });
         }
 
-        // Умный рендер: создает элементы только один раз, видео никогда не перезапускается!
+        // Умный рендер: элементы создаются один раз, видео не перезапускается
         function reconcileScene() {
             updateContainer('operator-overlay-canvas', true);
             updateContainer('obs-render-canvas', false);
@@ -259,7 +277,7 @@
                     if (item.type === 'text') {
                         node.innerHTML = `<div class="text-4xl font-black text-center text-outline-dark bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-700 text-white">${escapeHtml(item.content)}</div>`;
                     } else if (item.type === 'video') {
-                        // ВИДЕО СОЗДАЕТСЯ РОВНО 1 РАЗ И ИГРАЕТ НЕПРЕРЫВНО
+                        // ВИДЕО СОЗДАЕТСЯ ОДИН ЕДИНСТВЕННЫЙ РАЗ И НЕ СБРАСЫВАЕТСЯ ПРИ ОБНОВЛЕНИЯХ
                         node.innerHTML = `<video src="${escapeHtml(item.url)}" autoplay loop muted playsinline class="w-[360px] rounded-xl shadow-2xl border border-slate-700"></video>`;
                     }
                     container.appendChild(node);
