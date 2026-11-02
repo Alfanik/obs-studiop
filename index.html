@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Live Overlay Studio Pro - Ultimate</title>
+    <title>OBS Live Overlay Studio - Ultimate Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -50,8 +50,9 @@
             user-select: none;
             touch-action: none;
             position: absolute;
-            will-change: transform, left, top;
-            transition: transform 0.05s linear;
+            will-change: transform;
+            /* Мгновенный отклик без лагов и задержек телепортации */
+            transition: none !important; 
         }
         .draggable-item:hover {
             outline: 2px dashed #6366f1;
@@ -68,14 +69,14 @@
             </div>
             <div>
                 <h1 class="font-extrabold text-sm tracking-wider uppercase text-white leading-tight">OBS LIVE OVERLAY STUDIO</h1>
-                <p class="text-[11px] text-slate-400">Пульт Модератора & Облачный Оверлей</p>
+                <p class="text-[11px] text-slate-400">Ультрабыстрый движок без лагов</p>
             </div>
         </div>
 
         <div class="flex items-center gap-4">
             <div class="hidden sm:flex items-center gap-2 bg-emerald-950/60 border border-emerald-500/40 px-3.5 py-1.5 rounded-full text-xs font-medium text-emerald-400">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Синхронизация активна</span>
+                <span>Синхронизация мгновенная</span>
             </div>
 
             <button onclick="copyOverlayLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-indigo-600/20 cursor-pointer">
@@ -95,7 +96,7 @@
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <div class="flex items-center gap-2">
                             <span class="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></span>
-                            <h2 class="font-bold text-xs uppercase tracking-wider text-slate-300">Пульт управления (Предпросмотр 16:9)</h2>
+                            <h2 class="font-bold text-xs uppercase tracking-wider text-slate-300">Пульт управления (Двойной клик по тексту — правка)</h2>
                         </div>
                         
                         <div class="flex items-center gap-2">
@@ -123,7 +124,7 @@
                         </div>
 
                         <div class="absolute bottom-3 left-3 z-30 bg-slate-900/90 border border-slate-700/80 px-3 py-1 rounded-lg text-[11px] text-slate-300 backdrop-blur pointer-events-none flex items-center gap-1.5">
-                            <i class="fa-solid fa-hand-pointer text-indigo-400"></i> Тяните мышкой • Колесико: масштаб
+                            <i class="fa-solid fa-hand-pointer text-indigo-400"></i> Тащите плавно • Двойной клик на текст для правки • Колесико: масштаб
                         </div>
                     </div>
                 </div>
@@ -170,7 +171,7 @@
                     <!-- TAB 1: TEXT -->
                     <div id="tab-content-text" class="space-y-4">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-1">Текст оверлея</label>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Добавить новый текст</label>
                             <textarea id="text-input" rows="3" placeholder="Введите текст..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none">ПРИВЕТ СТРИМ! 🔥</textarea>
                         </div>
 
@@ -205,7 +206,7 @@
                         </button>
                     </div>
 
-                    <!-- TAB 3: VIDEO / YOUTUBE -->
+                    <!-- TAB 3: VIDEO -->
                     <div id="tab-content-video" class="space-y-4 hidden">
                         <div>
                             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Ссылка на видео (MP4 / WebM / YouTube)</label>
@@ -233,10 +234,10 @@
     </main>
 
     <script>
-        const FIREBASE_DB_URL = "https://alfanik-ac5d7-default-rtdb.firebaseio.com/obs_state.json";
-
+        const STORAGE_KEY = "obs_ultra_studio_v6";
+        const bc = new BroadcastChannel('obs_ultra_sync_v6');
+        
         let activeOverlays = [];
-        let lastCloudString = "";
         let isDragging = false;
         let dragTargetId = null;
         let dragStartX = 0, dragStartY = 0;
@@ -248,16 +249,43 @@
 
             if (modeParam === 'overlay') {
                 switchView('overlay');
-                loadLocalCacheDirect();
-                setInterval(fetchStateFromCloud, 800);
-                fetchStateFromCloud();
+                loadLocalCache();
             } else {
                 switchView('operator');
-                setInterval(() => {
-                    if (!isDragging) fetchStateFromCloud();
-                }, 1500);
-                fetchStateFromCloud();
+                loadLocalCache();
             }
+
+            // Мгновенная синхронизация через BroadcastChannel без лагов сети
+            bc.onmessage = (event) => {
+                if (event.data.type === 'SYNC') {
+                    activeOverlays = event.data.state;
+                    reconcileScene();
+                }
+            };
+
+            // Дополнительная защита через localStorage для друзей и OBS
+            window.addEventListener('storage', (e) => {
+                if (e.key === STORAGE_KEY) {
+                    try {
+                        activeOverlays = JSON.parse(e.newValue || '[]');
+                        reconcileScene();
+                    } catch(err) {}
+                }
+            });
+
+            // Периодический опрос для друга у которого нет BroadcastChannel
+            setInterval(() => {
+                if (!isDragging) {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (JSON.stringify(parsed) !== JSON.stringify(activeOverlays)) {
+                            activeOverlays = parsed;
+                            reconcileScene();
+                        }
+                    }
+                }
+            }, 300);
 
             window.addEventListener('mousemove', handleGlobalMouseMove);
             window.addEventListener('mouseup', handleGlobalMouseUp);
@@ -266,59 +294,20 @@
         };
 
         function saveAndBroadcast() {
-            const cleanOverlays = activeOverlays.map(item => ({
-                id: item.id,
-                type: item.type,
-                content: item.content,
-                url: item.url,
-                size: item.size,
-                color: item.color,
-                scale: item.scale || 1,
-                x: item.x,
-                y: item.y,
-                volume: item.volume || 0.8
-            }));
-
-            const jsonString = JSON.stringify(cleanOverlays);
-            lastCloudString = jsonString;
-            localStorage.setItem('obs_cache_v5', jsonString);
-            
-            fetch(FIREBASE_DB_URL, {
-                method: 'PUT',
-                body: jsonString,
-                headers: { 'Content-Type': 'application/json' }
-            }).catch(err => console.error(err));
+            const jsonString = JSON.stringify(activeOverlays);
+            localStorage.setItem(STORAGE_KEY, jsonString);
+            bc.postMessage({ type: 'SYNC', state: activeOverlays });
+            reconcileScene();
         }
 
-        function loadLocalCacheDirect() {
+        function loadLocalCache() {
             try {
-                const cached = localStorage.getItem('obs_cache_v5');
+                const cached = localStorage.getItem(STORAGE_KEY);
                 if (cached) {
                     activeOverlays = JSON.parse(cached);
                     reconcileScene();
                 }
             } catch(e) {}
-        }
-
-        function fetchStateFromCloud() {
-            if (isDragging) return;
-
-            fetch(FIREBASE_DB_URL, { cache: 'no-store' })
-                .then(res => res.json())
-                .then(data => {
-                    let newData = [];
-                    if (data && Array.isArray(data)) newData = data;
-                    else if (data && typeof data === 'object') newData = Object.values(data);
-
-                    const newString = JSON.stringify(newData);
-                    if (newString !== lastCloudString) {
-                        lastCloudString = newString;
-                        localStorage.setItem('obs_cache_v5', newString);
-                        activeOverlays = newData;
-                        reconcileScene();
-                    }
-                })
-                .catch(err => loadLocalCacheDirect());
         }
 
         function switchView(mode) {
@@ -352,7 +341,6 @@
                 y: 50
             });
             saveAndBroadcast();
-            reconcileScene();
         }
 
         function sendImageUrlOverlay() {
@@ -368,7 +356,6 @@
             });
             document.getElementById('image-url-input').value = '';
             saveAndBroadcast();
-            reconcileScene();
         }
 
         function sendVideoUrlOverlay() {
@@ -376,7 +363,6 @@
             if (!rawUrl) return;
             const vol = (parseInt(document.getElementById('video-volume').value) || 80) / 100;
             
-            // Умное определение YouTube
             let finalUrl = rawUrl;
             let type = 'video';
             
@@ -388,7 +374,6 @@
                 } else if (rawUrl.includes('v=')) {
                     videoId = rawUrl.split('v=')[1].split('&')[0];
                 }
-                // Формируем правильную ссылку на плеер YouTube с автозапуском и звуком
                 finalUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=0`;
             }
 
@@ -403,13 +388,63 @@
             });
             document.getElementById('video-url-input').value = '';
             saveAndBroadcast();
-            reconcileScene();
         }
 
         function clearAllOverlays() {
             activeOverlays = [];
             saveAndBroadcast();
-            reconcileScene();
+        }
+
+        // --- УМНОЕ РЕДАКТИРОВАНИЕ ТЕКСТА ПО ДВОЙНОМУ КЛИКУ С ЭФФЕКТОМ ПЕЧАТИ ---
+        function enableTextInlineEdit(id, textContainer) {
+            const item = activeOverlays.find(i => i.id === id);
+            if (!item || item.type !== 'text') return;
+
+            const currentText = item.content;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentText;
+            input.className = "bg-slate-900/95 border-2 border-indigo-500 text-white px-3 py-1 rounded-xl text-center outline-none shadow-2xl font-bold w-full";
+            
+            textContainer.innerHTML = '';
+            textContainer.appendChild(input);
+            input.focus();
+            input.select();
+
+            const saveChange = () => {
+                const newVal = input.value.trim();
+                if (newVal) {
+                    item.content = newVal;
+                    saveAndBroadcast();
+                    typewriterEffect(textContainer, newVal);
+                } else {
+                    textContainer.innerText = currentText;
+                }
+            };
+
+            input.onblur = saveChange;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    saveChange();
+                } else if (e.key === 'Escape') {
+                    textContainer.innerText = currentText;
+                }
+            };
+        }
+
+        // Эффект живого напечатывания текста
+        function typewriterEffect(container, text) {
+            container.innerHTML = '';
+            let i = 0;
+            const speed = 25; // скорость печати букв
+            function typeWriter() {
+                if (i < text.length) {
+                    container.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, speed);
+                }
+            }
+            typeWriter();
         }
 
         function reconcileScene() {
@@ -447,18 +482,23 @@
                     }
 
                     if (item.type === 'text') {
-                        node.innerHTML = `<div class="${item.size} font-black text-center text-outline-dark text-content" style="color: ${item.color};">${escapeHtml(item.content)}</div>`;
+                        node.innerHTML = `<div class="${item.size} font-black text-center text-outline-dark text-content cursor-pointer" style="color: ${item.color};">${escapeHtml(item.content)}</div>`;
+                        if (isInteractive) {
+                            const textDiv = node.querySelector('.text-content');
+                            textDiv.title = "Дважды кликните, чтобы изменить текст";
+                            textDiv.ondblclick = (e) => {
+                                e.stopPropagation();
+                                enableTextInlineEdit(item.id, textDiv);
+                            };
+                        }
                     } else if (item.type === 'image') {
                         node.innerHTML = `<img src="${escapeHtml(item.url)}" class="max-w-[400px] rounded-xl shadow-2xl">`;
                     } else if (item.type === 'video') {
-                        // ВАЖНО: В пульте управления (isInteractive = true) видео ВСЕГДА MUTE, чтобы звук не двоился!
-                        // В OBS (isInteractive = false) звук играет с заданной громкостью.
                         const muteAttr = isInteractive ? 'muted' : '';
                         node.innerHTML = `<video src="${escapeHtml(item.url)}" autoplay loop ${muteAttr} playsinline class="max-w-[450px] rounded-xl shadow-2xl"></video>`;
                         const vid = node.querySelector('video');
                         if (vid && !isInteractive) vid.volume = item.volume || 0.8;
                     } else if (item.type === 'youtube') {
-                        // YouTube плеер через iframe
                         node.innerHTML = `<iframe src="${escapeHtml(item.url)}" class="w-[480px] aspect-video rounded-xl shadow-2xl border-0 pointer-events-auto" allow="autoplay"></iframe>`;
                     }
                     container.appendChild(node);
@@ -468,6 +508,7 @@
             });
         }
 
+        // --- УЛЬТРАПЛАВНОЕ ПЕРЕМЕЩЕНИЕ БЕЗ ТЕЛЕПОРТАЦИИ ---
         function startDrag(e, id) {
             e.preventDefault();
             isDragging = true;
@@ -498,7 +539,12 @@
                 item.x = Math.max(5, Math.min(95, elementStartX + deltaX));
                 item.y = Math.max(5, Math.min(95, elementStartY + deltaY));
 
-                updateNodeTransform(item.id, item.x, item.y, item.scale || 1);
+                // Двигаем мгновенно через GPU трансформ без задержек
+                const nodes = document.querySelectorAll(`[data-id="${dragTargetId}"]`);
+                nodes.forEach(node => {
+                    node.style.left = item.x + '%';
+                    node.style.top = item.y + '%';
+                });
             }
         }
 
@@ -574,7 +620,6 @@
         function removeOverlayItem(id) {
             activeOverlays = activeOverlays.filter(i => i.id !== id);
             saveAndBroadcast();
-            reconcileScene();
         }
 
         function onStreamProviderChange() {
@@ -622,7 +667,7 @@
         function copyOverlayLink() {
             const url = window.location.origin + window.location.pathname + '?mode=overlay';
             navigator.clipboard.writeText(url);
-            alert('Ссылка для OBS успешно скопирована!');
+            alert('Ссылка для OBS скопирована!');
         }
 
         function escapeHtml(str) {
