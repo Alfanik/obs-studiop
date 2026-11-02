@@ -70,6 +70,7 @@
             cursor: move;
             user-select: none;
             touch-action: none;
+            will-change: left, top;
         }
         .draggable-item:hover {
             outline: 2px dashed #6366f1;
@@ -382,7 +383,7 @@
         let dragStartY = 0;
         let elementStartX = 0;
         let elementStartY = 0;
-        let lastCloudString = ""; // Защита от мигания и перерисовок
+        let lastCloudString = "";
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -390,16 +391,14 @@
 
             if (modeParam === 'overlay') {
                 switchView('overlay');
-                // Для OBS опрос раз в 1 секунду
-                setInterval(fetchStateFromCloud, 1000);
+                setInterval(fetchStateFromCloud, 800);
                 fetchStateFromCloud();
             } else {
                 switchView('operator');
                 ensureLiveTextItem();
-                // Для пульта управления опрос отключен во время перетаскивания
                 setInterval(() => {
                     if (!isDragging) fetchStateFromCloud();
-                }, 2000);
+                }, 1500);
                 fetchStateFromCloud();
             }
 
@@ -411,19 +410,17 @@
 
         function saveAndBroadcast() {
             const jsonString = JSON.stringify(activeOverlays);
-            lastCloudString = jsonString; // Сразу фиксируем локально, чтобы таймер не сбрасывал
+            lastCloudString = jsonString;
             
             fetch(FIREBASE_DB_URL, {
                 method: 'PUT',
                 body: jsonString,
                 headers: { 'Content-Type': 'application/json' }
-            }).then(() => {
-                renderOverlays();
             }).catch(err => console.error("Ошибка сохранения:", err));
         }
 
         function fetchStateFromCloud() {
-            if (isDragging) return; // Никаких запросов во время перетаскивания мышей!
+            if (isDragging) return;
 
             fetch(FIREBASE_DB_URL, { cache: 'no-store' })
                 .then(res => res.json())
@@ -433,11 +430,10 @@
                     else if (data && typeof data === 'object') newData = Object.values(data);
 
                     const newString = JSON.stringify(newData);
-                    // Перерисовываем экран ТОЛЬКО если данные в облаке действительно изменились
                     if (newString !== lastCloudString) {
                         lastCloudString = newString;
                         activeOverlays = newData;
-                        renderOverlays();
+                        renderOverlaysWithoutReloadingMedia(); // Умный рендер без мигания медиа
                     }
                 })
                 .catch(err => console.error("Ошибка загрузки:", err));
@@ -490,7 +486,7 @@
             const item = activeOverlays.find(i => i.id === liveTextItemId);
             if (item) {
                 item.content = textVal;
-                renderOverlays(); // Мгновенный локальный рендер без ожидания сети
+                saveAndBroadcast();
             }
         }
 
@@ -505,7 +501,7 @@
                 item.bgStyle = document.getElementById('text-bg-style').value;
                 item.anim = document.getElementById('global-anim-select').value;
                 document.getElementById('text-color-hex').innerText = item.color;
-                renderOverlays();
+                saveAndBroadcast();
             }
         }
 
@@ -647,7 +643,7 @@
             saveAndBroadcast();
         }
 
-        // --- ПЛАВНОЕ ПЕРЕМЕЩЕНИЕ БЕЗ ТЕЛЕПОРТАЦИИ И МИГАНИЯ ---
+        // --- ПЛАВНОЕ ПЕРЕМЕЩЕНИЕ БЕЗ ЛАГОВ ---
         function startDrag(e, itemId) {
             e.preventDefault();
             isDragging = true;
@@ -684,7 +680,7 @@
                 item.x = newX;
                 item.y = newY;
 
-                // Двигаем элемент локально без отправки запросов в сеть
+                // Быстрое обновление координат прямо в DOM без перезагрузки блоков
                 const targetNode = container.querySelector(`[data-id="${dragTargetId}"]`);
                 if (targetNode) {
                     targetNode.style.left = newX + '%';
@@ -704,7 +700,7 @@
             if (isDragging) {
                 isDragging = false;
                 dragTargetId = null;
-                saveAndBroadcast(); // Итоговые координаты улетают в Firebase ровно в момент отпускания мыши
+                saveAndBroadcast(); // Отправка в облако происходит ровно в момент отпускания мыши
             }
         }
 
@@ -735,22 +731,44 @@
             reader.readAsDataURL(file);
         }
 
+        // Полный рендер (вызывается при добавлении/удалении)
         function renderOverlays() {
+            actualRender(false);
+        }
+
+        // Умный рендер без пересоздания элементов (убирает мигание видео и картинок)
+        function renderOverlaysWithoutReloadingMedia() {
+            actualRender(true);
+        }
+
+        function actualRender(smartMode) {
             const obsCanvas = document.getElementById('obs-render-canvas');
             const operatorCanvas = document.getElementById('operator-overlay-canvas');
             const activeList = document.getElementById('active-elements-list');
             const badge = document.getElementById('active-count-badge');
 
             if (badge) badge.innerText = activeOverlays.length;
-            if (obsCanvas) obsCanvas.innerHTML = '';
-            if (operatorCanvas) operatorCanvas.innerHTML = '';
 
+            if (!smartMode) {
+                if (obsCanvas) obsCanvas.innerHTML = '';
+                if (operatorCanvas) operatorCanvas.innerHTML = '';
+            }
+
+            // Если запущен умный режим, просто обновляем позиции и контент без очистки DOM
             activeOverlays.forEach(item => {
                 if (item.hidden) return;
 
-                const obsNode = document.createElement('div');
-                const animClass = item.anim || 'anim-fade';
-                obsNode.className = `absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none ${animClass}`;
+                let obsNode = obsCanvas ? obsCanvas.querySelector(`[data-id="${item.id}"]`) : null;
+                let opNode = operatorCanvas ? operatorCanvas.querySelector(`[data-id="${item.id}"]`) : null;
+
+                if (!obsNode) {
+                    obsNode = document.createElement('div');
+                    obsNode.dataset.id = item.id;
+                    const animClass = item.anim || 'anim-fade';
+                    obsNode.className = `absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none ${animClass}`;
+                    if (obsCanvas) obsCanvas.appendChild(obsNode);
+                }
+
                 obsNode.style.left = item.x + '%';
                 obsNode.style.top = item.y + '%';
 
@@ -767,21 +785,39 @@
                 } else if (item.type === 'image') {
                     contentHtml = `<img src="${escapeHtml(item.url)}" class="max-w-[400px] h-auto rounded-2xl shadow-2xl object-contain">`;
                 } else if (item.type === 'video') {
-                    contentHtml = `<video src="${escapeHtml(item.url)}" autoplay loop playsinline class="max-w-[500px] rounded-2xl shadow-2xl" onloadedmetadata="this.volume=${item.volume || 0.8}; this.currentTime=0;"></video>`;
+                    contentHtml = `<video src="${escapeHtml(item.url)}" autoplay loop playsinline class="max-w-[500px] rounded-2xl shadow-2xl" onloadedmetadata="this.volume=${item.volume || 0.8};"></video>`;
                 } else if (item.type === 'widget') {
                     contentHtml = item.html;
                 }
 
                 obsNode.innerHTML = contentHtml;
-                if (obsCanvas) obsCanvas.appendChild(obsNode);
 
-                const opNode = obsNode.cloneNode(true);
-                opNode.className += ' draggable-item pointer-events-auto cursor-move';
-                opNode.dataset.id = item.id;
-                opNode.onmousedown = (e) => startDrag(e, item.id);
-                opNode.ontouchstart = (e) => startDrag(e, item.id);
-                if (operatorCanvas) operatorCanvas.appendChild(opNode);
+                if (operatorCanvas) {
+                    if (!opNode) {
+                        opNode = obsNode.cloneNode(true);
+                        opNode.className += ' draggable-item pointer-events-auto cursor-move';
+                        opNode.onmousedown = (e) => startDrag(e, item.id);
+                        opNode.ontouchstart = (e) => startDrag(e, item.id);
+                        operatorCanvas.appendChild(opNode);
+                    }
+                    opNode.style.left = item.x + '%';
+                    opNode.style.top = item.y + '%';
+                }
             });
+
+            // Удаляем элементы, которых больше нет в стейте
+            if (obsCanvas) {
+                Array.from(obsCanvas.children).forEach(child => {
+                    const id = child.dataset.id;
+                    if (!activeOverlays.find(i => i.id === id && !i.hidden)) child.remove();
+                });
+            }
+            if (operatorCanvas) {
+                Array.from(operatorCanvas.children).forEach(child => {
+                    const id = child.dataset.id;
+                    if (!activeOverlays.find(i => i.id === id && !i.hidden)) child.remove();
+                });
+            }
 
             if (activeList) {
                 if (activeOverlays.length === 0) {
@@ -822,18 +858,21 @@
             if (item) {
                 item.hidden = !item.hidden;
                 saveAndBroadcast();
+                renderOverlays();
             }
         }
 
         function removeOverlayItem(id) {
             activeOverlays = activeOverlays.filter(i => i.id !== id);
             saveAndBroadcast();
+            renderOverlays();
         }
 
         function clearAllOverlays() {
             activeOverlays = [];
             liveTextItemId = null;
             saveAndBroadcast();
+            renderOverlays();
             showToast('Экран очищен', 'warning');
         }
 
