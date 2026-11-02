@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Live Overlay Studio</title>
+    <title>OBS Live Overlay Studio (Cloud)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -34,14 +34,14 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-extrabold tracking-wider text-white uppercase">OBS Live Overlay Studio</h1>
-                    <p class="text-[11px] text-gray-400">Пульт Модератора & Синхронный Оверлей</p>
+                    <p class="text-[11px] text-gray-400">Облачный Пульт Модератора</p>
                 </div>
             </div>
             
             <div class="flex items-center space-x-3">
-                <div class="hidden sm:flex items-center space-x-2 bg-emerald-950/40 border border-emerald-500/30 px-3 py-1.5 rounded-full">
+                <div id="cloud-status" class="hidden sm:flex items-center space-x-2 bg-emerald-950/40 border border-emerald-500/30 px-3 py-1.5 rounded-full">
                     <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span class="text-[11px] font-medium text-emerald-300">Синхронизация активна</span>
+                    <span class="text-[11px] font-medium text-emerald-300">Облако подключено</span>
                 </div>
                 <button onclick="copyOverlayLink()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center space-x-2">
                     <span>🔗 Ссылка OBS</span>
@@ -171,41 +171,63 @@
         </main>
     </div>
 
-    <script>
+    <script class="cloud-sync-engine">
+        // -------------------------------------------------------------
+        // ВСТАВЬТЕ СЮДА ВАШ URL БАЗЫ ДАННЫХ ИЗ FIREBASE:
+        const FIREBASE_DB_URL = "https://alfanik-ac5d7-default-rtdb.firebaseio.com";
+        // -------------------------------------------------------------
+
         const isOverlayMode = new URLSearchParams(window.location.search).has('mode');
-        const channel = new BroadcastChannel('obs_overlay_channel');
         let elementsState = {};
         let activeLiveTextId = null;
 
         if (isOverlayMode) {
             document.getElementById('obs-overlay-view').classList.remove('hidden');
             document.getElementById('control-panel-view').remove();
-            
-            // Синхронизация через BroadcastChannel и localStorage
-            channel.onmessage = (e) => renderOverlayElements(e.data);
-            window.addEventListener('storage', () => loadState());
-            setInterval(loadState, 500); // Резервный опрос локального хранилища
-            loadState();
+            startCloudListener();
         } else {
-            channel.onmessage = (e) => { elementsState = e.data; updatePreviewCanvas(); updateActiveList(); };
             initControlPanel();
+            startCloudListener();
         }
 
+        // Запись состояния в облако через REST API
         function saveAndBroadcast() {
-            localStorage.setItem('obs_elements_state', JSON.stringify(elementsState));
-            channel.postMessage(elementsState);
-            if (!isOverlayMode) {
-                updatePreviewCanvas();
-                updateActiveList();
-            }
+            fetch(FIREBASE_DB_URL, {
+                method: 'PUT',
+                body: JSON.stringify(elementsState),
+                headers: { 'Content-Type': 'application/json' }
+            }).then(() => {
+                if (!isOverlayMode) {
+                    updatePreviewCanvas();
+                    updateActiveList();
+                }
+            }).catch(err => console.error("Ошибка облака:", err));
         }
 
-        function loadState() {
-            const saved = localStorage.getItem('obs_elements_state');
-            if (saved) {
-                elementsState = JSON.parse(saved);
-                renderOverlayElements(elementsState);
-            }
+        // Постоянная подписка на обновления облака (SSE поток)
+        function startCloudListener() {
+            const eventSource = new EventSource(FIREBASE_DB_URL);
+            
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data && data.data !== undefined) {
+                    elementsState = data.data || {};
+                } else if (data && typeof data === 'object') {
+                    elementsState = data;
+                }
+                
+                if (isOverlayMode) {
+                    renderOverlayElements(elementsState);
+                } else {
+                    updatePreviewCanvas();
+                    updateActiveList();
+                }
+            };
+
+            eventSource.onerror = function() {
+                // Автоматическое переподключение через 2 секунды в случае обрыва
+                setTimeout(startCloudListener, 2000);
+            };
         }
 
         function renderOverlayElements(state) {
@@ -214,7 +236,7 @@
             container.innerHTML = '';
             
             Object.values(state).forEach(el => {
-                if (el.hidden) return;
+                if (!el || el.hidden) return;
 
                 const div = document.createElement('div');
                 const animClass = el.anim === 'fade' ? 'anim-fade' : el.anim === 'zoom' ? 'anim-zoom' : el.anim === 'slide' ? 'anim-slide' : 'anim-none';
@@ -236,7 +258,6 @@
         }
 
         function initControlPanel() {
-            loadState();
             updateTwitchPreview();
             setupDragAndDropOnPreview();
         }
@@ -356,6 +377,7 @@
             layer.innerHTML = '';
 
             Object.values(elementsState).forEach(el => {
+                if (!el) return;
                 const div = document.createElement('div');
                 div.className = `absolute transform -translate-x-1/2 -translate-y-1/2 cursor-move border ${el.hidden ? 'border-dashed border-red-500/50 opacity-40' : 'border-indigo-500/40 hover:border-indigo-400'} p-1 rounded bg-black/40 backdrop-blur pointer-events-auto transition-opacity`;
                 div.style.left = el.x + '%';
@@ -388,6 +410,7 @@
 
             keys.forEach(id => {
                 const el = elementsState[id];
+                if (!el) return;
                 const row = document.createElement('div');
                 row.className = 'flex items-center justify-between bg-gray-800/80 px-3 py-2 rounded-xl text-xs';
                 row.innerHTML = `
@@ -458,9 +481,6 @@
                     elDiv.style.left = elementsState[draggedId].x + '%';
                     elDiv.style.top = elementsState[draggedId].y + '%';
                 }
-                
-                localStorage.setItem('obs_elements_state', JSON.stringify(elementsState));
-                channel.postMessage(elementsState);
             });
 
             window.addEventListener('mouseup', () => {
