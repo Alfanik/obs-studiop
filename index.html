@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Live Overlay Studio (Cloud)</title>
+    <title>OBS Live Overlay Studio (Polling)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -20,7 +20,7 @@
 </head>
 <body class="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
-    <!-- РЕЖИМ ОВЕРЛЕЯ ДЛЯ OBS (если в URL есть ?mode=overlay) -->
+    <!-- РЕЖИМ ОВЕРЛЕЯ ДЛЯ OBS -->
     <div id="obs-overlay-view" class="hidden fixed inset-0 overflow-hidden pointer-events-none z-50">
         <div id="active-elements-container" class="relative w-full h-full"></div>
     </div>
@@ -34,14 +34,14 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-extrabold tracking-wider text-white uppercase">OBS Live Overlay Studio</h1>
-                    <p class="text-[11px] text-gray-400">Облачный Пульт Модератора</p>
+                    <p class="text-[11px] text-gray-400">Пульт Модератора</p>
                 </div>
             </div>
             
             <div class="flex items-center space-x-3">
-                <div id="cloud-status" class="hidden sm:flex items-center space-x-2 bg-emerald-950/40 border border-emerald-500/30 px-3 py-1.5 rounded-full">
+                <div class="hidden sm:flex items-center space-x-2 bg-emerald-950/40 border border-emerald-500/30 px-3 py-1.5 rounded-full">
                     <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span class="text-[11px] font-medium text-emerald-300">Облако подключено</span>
+                    <span class="text-[11px] font-medium text-emerald-300">Связь с облаком активна</span>
                 </div>
                 <button onclick="copyOverlayLink()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center space-x-2">
                     <span>🔗 Ссылка OBS</span>
@@ -171,11 +171,9 @@
         </main>
     </div>
 
-    <script class="cloud-sync-engine">
-        // -------------------------------------------------------------
-        // ВСТАВЬТЕ СЮДА ВАШ URL БАЗЫ ДАННЫХ ИЗ FIREBASE:
-        const FIREBASE_DB_URL = "https://alfanik-ac5d7-default-rtdb.firebaseio.com";
-        // -------------------------------------------------------------
+    <script>
+        // ВАША ССЫЛКА НА БАЗУ ДАННЫХ FIREBASE:
+        const FIREBASE_DB_URL = "https://alfanik-ac5d7-default-rtdb.firebaseio.com/obs_state.json";
 
         const isOverlayMode = new URLSearchParams(window.location.search).has('mode');
         let elementsState = {};
@@ -184,13 +182,15 @@
         if (isOverlayMode) {
             document.getElementById('obs-overlay-view').classList.remove('hidden');
             document.getElementById('control-panel-view').remove();
-            startCloudListener();
+            // Запуск опроса облака каждые 1.5 секунды специально для OBS
+            setInterval(fetchStateFromCloud, 1500);
+            fetchStateFromCloud();
         } else {
             initControlPanel();
-            startCloudListener();
+            setInterval(fetchStateFromCloud, 1500);
+            fetchStateFromCloud();
         }
 
-        // Запись состояния в облако через REST API
         function saveAndBroadcast() {
             fetch(FIREBASE_DB_URL, {
                 method: 'PUT',
@@ -201,33 +201,27 @@
                     updatePreviewCanvas();
                     updateActiveList();
                 }
-            }).catch(err => console.error("Ошибка облака:", err));
+            }).catch(err => console.error("Ошибка сохранения:", err));
         }
 
-        // Постоянная подписка на обновления облака (SSE поток)
-        function startCloudListener() {
-            const eventSource = new EventSource(FIREBASE_DB_URL);
-            
-            eventSource.onmessage = function(event) {
-                const data = JSON.parse(event.data);
-                if (data && data.data !== undefined) {
-                    elementsState = data.data || {};
-                } else if (data && typeof data === 'object') {
-                    elementsState = data;
-                }
-                
-                if (isOverlayMode) {
-                    renderOverlayElements(elementsState);
-                } else {
-                    updatePreviewCanvas();
-                    updateActiveList();
-                }
-            };
+        function fetchStateFromCloud() {
+            fetch(FIREBASE_DB_URL)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && typeof data === 'object') {
+                        elementsState = data;
+                    } else {
+                        elementsState = {};
+                    }
 
-            eventSource.onerror = function() {
-                // Автоматическое переподключение через 2 секунды в случае обрыва
-                setTimeout(startCloudListener, 2000);
-            };
+                    if (isOverlayMode) {
+                        renderOverlayElements(elementsState);
+                    } else {
+                        updatePreviewCanvas();
+                        updateActiveList();
+                    }
+                })
+                .catch(err => console.error("Ошибка загрузки:", err));
         }
 
         function renderOverlayElements(state) {
