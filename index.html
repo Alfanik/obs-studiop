@@ -316,7 +316,6 @@
                     <div id="tab-content-widgets" class="space-y-3 hidden">
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Готовые виджеты для стрима</label>
                         
-                        <!-- Кнопка вызова продвинутого конструктора виджетов -->
                         <button onclick="openWidgetBuilderModal()" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 p-3.5 rounded-xl text-xs font-bold text-white transition shadow-lg cursor-pointer mb-2">
                             <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
                             <span>➕ Создать новый виджет (Конструктор)</span>
@@ -378,7 +377,7 @@
 
     <!-- МОДАЛЬНОЕ ОКНО КОНСТРУКТОРА ВИДЖЕТОВ -->
     <div id="widget-builder-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-obs-card border border-obs-border rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl flex flex-col gap-6">
+        <div class="bg-obs-card border border-obs-border rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl flex flex-col gap-6 relative">
             <div class="flex justify-between items-center border-b border-slate-800 pb-4">
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> Продвинутый конструктор виджетов
@@ -388,7 +387,7 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 <!-- Настройки конструктора -->
                 <div class="space-y-4">
                     <div>
@@ -403,7 +402,7 @@
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Ширина (px)</label>
+                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Ширина медиа (px)</label>
                             <input type="number" id="bw-width" value="300" oninput="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
                         </div>
                         <div>
@@ -413,7 +412,15 @@
                     </div>
 
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Текст на виджете</label>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Фон карточки</label>
+                        <select id="bw-bg-toggle" onchange="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
+                            <option value="solid" selected>Тёмный подложка (С рамочкой)</option>
+                            <option value="transparent">Прозрачный фон (Без подложки)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Текст под медиа</label>
                         <input type="text" id="bw-text" value="Новый донат! 🎉" oninput="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
                     </div>
 
@@ -429,26 +436,25 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-400 mb-1">Цвет рамки / акцента</label>
-                            <input type="color" id="bw-color" value="#6366f1" class="w-full h-8 bg-slate-900 border border-slate-700 rounded-lg cursor-pointer px-1">
+                            <input type="color" id="bw-color" value="#6366f1" oninput="updateBuilderPreview()" class="w-full h-8 bg-slate-900 border border-slate-700 rounded-lg cursor-pointer px-1">
                         </div>
                     </div>
                 </div>
 
-                <!-- Предварительное окно -->
-                <div class="flex flex-col bg-black/60 border border-slate-800 rounded-2xl p-4 items-center justify-center relative min-h-[250px]">
-                    <span class="absolute top-3 left-3 text-[10px] uppercase font-bold text-slate-500">Живое превью</span>
-                    <div id="builder-preview-box" class="flex flex-col items-center gap-3 p-4 rounded-xl transition-all" style="background: rgba(15, 23, 42, 0.9); border: 2px solid #6366f1;">
-                        <div id="bw-prev-media" class="w-20 h-20 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 text-xs">Медиа</div>
-                        <div id="bw-prev-text" class="text-sm font-bold text-white text-center">Новый донат! 🎉</div>
+                <!-- Ограниченное окно живого превью -->
+                <div class="flex flex-col bg-black/60 border border-slate-800 rounded-2xl p-4 items-center justify-center relative min-h-[300px] max-h-[400px] overflow-hidden w-full">
+                    <span class="absolute top-3 left-3 text-[10px] uppercase font-bold text-slate-500 z-10">Живое превью</span>
+                    <div id="builder-preview-box" class="flex flex-col items-center gap-3 p-4 rounded-xl transition-all max-w-full max-h-full overflow-auto">
+                        <div id="bw-prev-media" class="w-full flex items-center justify-center"></div>
+                        <div id="bw-prev-text" class="text-sm font-bold text-white text-center"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Имя нового виджета и кнопка сохранения -->
             <div class="border-t border-slate-800 pt-4 flex flex-col md:flex-row items-center gap-4 justify-between">
                 <div class="w-full md:w-1/2">
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Название виджета в списке</label>
-                    <input type="text" id="bw-name" value="Праздничный донат" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                    <input type="text" id="bw-name" value="Праздничный виджет" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
                 </div>
                 <button onclick="saveCustomWidget()" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition text-sm cursor-pointer flex items-center justify-center gap-2">
                     <i class="fa-solid fa-check"></i> Сохранить и добавить виджет
@@ -474,6 +480,7 @@
         let elementStartY = 0;
         let lastCloudString = "";
         let builderMediaSrc = "";
+        let builderMediaType = "image";
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -499,15 +506,35 @@
             window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
             window.addEventListener('touchend', handleGlobalMouseUp);
 
-            // Обработка масштабирования колесиком мыши на холсте превью
             const previewContainer = document.getElementById('preview-container');
             if (previewContainer) {
                 previewContainer.addEventListener('wheel', handleCanvasWheel, { passive: false });
             }
         };
 
+        // Отправка в облако ТОЛЬКО ПОЗИЦИЙ (легкие данные)
         function saveAndBroadcast() {
-            const jsonString = JSON.stringify(activeOverlays);
+            const cleanOverlays = activeOverlays.map(item => ({
+                id: item.id,
+                type: item.type,
+                content: item.content,
+                url: item.url,
+                font: item.font,
+                size: item.size,
+                color: item.color,
+                effect: item.effect,
+                bgStyle: item.bgStyle,
+                anim: item.anim,
+                scale: item.scale || 1,
+                x: item.x,
+                y: item.y,
+                hidden: item.hidden,
+                html: item.html,
+                title: item.title,
+                volume: item.volume
+            }));
+
+            const jsonString = JSON.stringify(cleanOverlays);
             lastCloudString = jsonString;
             
             fetch(FIREBASE_DB_URL, {
@@ -604,7 +631,6 @@
             }
         }
 
-        // Мгновенное применение анимации на лету без бага
         function onGlobalAnimChange() {
             const anim = document.getElementById('global-anim-select').value;
             if (liveTextItemId) {
@@ -750,7 +776,7 @@
             showToast('Виджет добавлен на экран');
         }
 
-        // --- КОНСТРУКТОР КАСТОМНЫХ ВИДЖЕТОВ ---
+        // КОНСТРУКТОР ВИДЖЕТОВ (ИСПРАВЛЕНО)
         function openWidgetBuilderModal() {
             document.getElementById('widget-builder-modal').classList.remove('hidden');
             updateBuilderPreview();
@@ -763,6 +789,7 @@
         function handleBuilderFile(e) {
             const file = e.target.files[0];
             if (!file) return;
+            builderMediaType = file.type.startsWith('video') ? 'video' : 'image';
             const reader = new FileReader();
             reader.onload = function(evt) {
                 builderMediaSrc = evt.target.result;
@@ -778,16 +805,28 @@
             const textVal = document.getElementById('bw-text').value;
             const widthVal = document.getElementById('bw-width').value || 300;
             const colorVal = document.getElementById('bw-color').value;
+            const bgToggle = document.getElementById('bw-bg-toggle').value;
 
             const prevBox = document.getElementById('builder-preview-box');
-            prevBox.style.width = widthVal + 'px';
-            prevBox.style.borderColor = colorVal;
+            prevBox.style.maxWidth = '100%';
+            
+            if (bgToggle === 'solid') {
+                prevBox.style.background = 'rgba(15, 23, 42, 0.95)';
+                prevBox.style.border = `2px solid ${colorVal}`;
+            } else {
+                prevBox.style.background = 'transparent';
+                prevBox.style.border = 'none';
+            }
 
             const prevMedia = document.getElementById('bw-prev-media');
             if (mediaSrc) {
-                prevMedia.innerHTML = `<img src="${mediaSrc}" class="w-full h-24 object-cover rounded-lg">`;
+                if (builderMediaType === 'video' || urlVal.endsWith('.mp4') || urlVal.endsWith('.webm')) {
+                    prevMedia.innerHTML = `<video src="${mediaSrc}" autoplay loop muted style="max-width: 100%; width: ${widthVal}px; height: auto; border-radius: 10px;"></video>`;
+                } else {
+                    prevMedia.innerHTML = `<img src="${mediaSrc}" style="max-width: 100%; width: ${widthVal}px; height: auto; border-radius: 10px; object-fit: contain;">`;
+                }
             } else {
-                prevMedia.innerHTML = `<div class="text-slate-500 text-xs">Медиа не выбрано</div>`;
+                prevMedia.innerHTML = `<div class="text-slate-500 text-xs p-4">Выберите или вставьте медиа</div>`;
             }
 
             document.getElementById('bw-prev-text').innerText = textVal;
@@ -802,11 +841,23 @@
             const vol = (parseInt(document.getElementById('bw-vol').value) || 80) / 100;
             const anim = document.getElementById('bw-anim').value;
             const color = document.getElementById('bw-color').value;
+            const bgToggle = document.getElementById('bw-bg-toggle').value;
+
+            let bgStyle = bgToggle === 'solid' ? `background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border: 2px solid ${color}; padding: 14px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.7);` : 'padding: 4px;';
+
+            let mediaTag = '';
+            if (mediaSrc) {
+                if (builderMediaType === 'video' || urlVal.endsWith('.mp4') || urlVal.endsWith('.webm')) {
+                    mediaTag = `<video src="${mediaSrc}" autoplay loop playsinline style="width: ${width}px; max-width: 100%; height: auto; border-radius: 10px;" onloadedmetadata="this.volume=${vol};"></video>`;
+                } else {
+                    mediaTag = `<img src="${mediaSrc}" style="width: ${width}px; max-width: 100%; height: auto; object-fit: contain; border-radius: 10px;" />`;
+                }
+            }
 
             const html = `
-                <div style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border: 2px solid ${color}; width: ${width}px; padding: 14px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center;">
-                    ${mediaSrc ? `<img src="${mediaSrc}" style="width: 100%; height: auto; max-height: 180px; object-fit: contain; border-radius: 10px;" />` : ''}
-                    <div style="font-size: 16px; color: #ffffff; font-weight: 800;">${escapeHtml(text)}</div>
+                <div style="${bgStyle} display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center;">
+                    ${mediaTag}
+                    ${text ? `<div style="font-size: 16px; color: #ffffff; font-weight: 800; text-shadow: 2px 2px 4px #000;">${escapeHtml(text)}</div>` : ''}
                 </div>
             `;
 
@@ -816,7 +867,7 @@
 
             renderCustomWidgetsMenu();
             closeWidgetBuilderModal();
-            showToast('Кастомный виджет создан!');
+            showToast('Виджет успешно сохранен!');
         }
 
         function renderCustomWidgetsMenu() {
@@ -874,7 +925,7 @@
             saveAndBroadcast();
         }
 
-        // --- МАСШТАБИРОВАНИЕ КОЛЕСИКОМ МЫШИ ---
+        // МАСШТАБИРОВАНИЕ КОЛЕСИКОМ
         function handleCanvasWheel(e) {
             const target = e.target.closest('[data-id]');
             if (!target) return;
@@ -885,16 +936,16 @@
 
             if (!item.scale) item.scale = 1;
             if (e.deltaY < 0) {
-                item.scale = Math.min(item.scale + 0.1, 3); // Увеличение до 3х
+                item.scale = Math.min(item.scale + 0.1, 3);
             } else {
-                item.scale = Math.max(item.scale - 0.1, 0.3); // Уменьшение до 0.3x
+                item.scale = Math.max(item.scale - 0.1, 0.3);
             }
 
             target.style.transform = `translate(-50%, -50%) scale(${item.scale})`;
             saveAndBroadcast();
         }
 
-        // --- ПЛАВНОЕ ПЕРЕМЕЩЕНИЕ БЕЗ ЛАГОВ ---
+        // МГНОВЕННОЕ И ПЛАВНОЕ ПЕРЕМЕЩЕНИЕ БЕЗ ЛАГОВ
         function startDrag(e, itemId) {
             e.preventDefault();
             isDragging = true;
@@ -950,7 +1001,7 @@
             if (isDragging) {
                 isDragging = false;
                 dragTargetId = null;
-                saveAndBroadcast();
+                saveAndBroadcast(); // Итоговые координаты уходят в облако ровно в момент отпускания кнопки мыши
             }
         }
 
