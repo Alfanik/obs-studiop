@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Live Overlay Studio - Ultimate Pro</title>
+    <title>OBS Live Overlay Studio - Click & Move Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -46,17 +46,26 @@
         ::-webkit-scrollbar-thumb:hover { background: #3b4c6e; }
 
         .draggable-item {
-            cursor: move;
+            cursor: pointer;
             user-select: none;
-            touch-action: none;
             position: absolute;
-            will-change: transform;
-            /* Мгновенный отклик без лагов и задержек телепортации */
-            transition: none !important; 
+            will-change: transform, left, top;
         }
         .draggable-item:hover {
             outline: 2px dashed #6366f1;
             outline-offset: 4px;
+        }
+        /* Режим переноса: элемент следует за мышкой */
+        .is-moving {
+            outline: 3px solid #22c55e !important;
+            outline-offset: 6px;
+            z-index: 999 !important;
+            animation: pulseGlow 1.5s infinite;
+        }
+        @keyframes pulseGlow {
+            0% { filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.6)); }
+            50% { filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.9)); }
+            100% { filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.6)); }
         }
     </style>
 </head>
@@ -69,14 +78,14 @@
             </div>
             <div>
                 <h1 class="font-extrabold text-sm tracking-wider uppercase text-white leading-tight">OBS LIVE OVERLAY STUDIO</h1>
-                <p class="text-[11px] text-slate-400">Ультрабыстрый движок без лагов</p>
+                <p class="text-[11px] text-slate-400">Режим «Кликнул и потащил» (Без лагов)</p>
             </div>
         </div>
 
         <div class="flex items-center gap-4">
             <div class="hidden sm:flex items-center gap-2 bg-emerald-950/60 border border-emerald-500/40 px-3.5 py-1.5 rounded-full text-xs font-medium text-emerald-400">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Синхронизация мгновенная</span>
+                <span>Синхронизация активна</span>
             </div>
 
             <button onclick="copyOverlayLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-indigo-600/20 cursor-pointer">
@@ -96,7 +105,7 @@
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <div class="flex items-center gap-2">
                             <span class="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></span>
-                            <h2 class="font-bold text-xs uppercase tracking-wider text-slate-300">Пульт управления (Двойной клик по тексту — правка)</h2>
+                            <h2 class="font-bold text-xs uppercase tracking-wider text-slate-300">Пульт управления (Клик по элементу — взять, клик — поставить)</h2>
                         </div>
                         
                         <div class="flex items-center gap-2">
@@ -124,7 +133,7 @@
                         </div>
 
                         <div class="absolute bottom-3 left-3 z-30 bg-slate-900/90 border border-slate-700/80 px-3 py-1 rounded-lg text-[11px] text-slate-300 backdrop-blur pointer-events-none flex items-center gap-1.5">
-                            <i class="fa-solid fa-hand-pointer text-indigo-400"></i> Тащите плавно • Двойной клик на текст для правки • Колесико: масштаб
+                            <i class="fa-solid fa-hand-pointer text-indigo-400"></i> Клик 1 раз чтобы взять элемент, клик 2 чтобы поставить • Колесико: масштаб
                         </div>
                     </div>
                 </div>
@@ -234,14 +243,11 @@
     </main>
 
     <script>
-        const STORAGE_KEY = "obs_ultra_studio_v6";
-        const bc = new BroadcastChannel('obs_ultra_sync_v6');
+        const STORAGE_KEY = "obs_click_move_v7";
+        const bc = new BroadcastChannel('obs_click_sync_v7');
         
         let activeOverlays = [];
-        let isDragging = false;
-        let dragTargetId = null;
-        let dragStartX = 0, dragStartY = 0;
-        let elementStartX = 0, elementStartY = 0;
+        let activeMovingId = null; // ID элемента, который сейчас следует за мышей
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -255,7 +261,6 @@
                 loadLocalCache();
             }
 
-            // Мгновенная синхронизация через BroadcastChannel без лагов сети
             bc.onmessage = (event) => {
                 if (event.data.type === 'SYNC') {
                     activeOverlays = event.data.state;
@@ -263,7 +268,6 @@
                 }
             };
 
-            // Дополнительная защита через localStorage для друзей и OBS
             window.addEventListener('storage', (e) => {
                 if (e.key === STORAGE_KEY) {
                     try {
@@ -273,9 +277,8 @@
                 }
             });
 
-            // Периодический опрос для друга у которого нет BroadcastChannel
             setInterval(() => {
-                if (!isDragging) {
+                if (!activeMovingId) {
                     const raw = localStorage.getItem(STORAGE_KEY);
                     if (raw) {
                         const parsed = JSON.parse(raw);
@@ -287,10 +290,9 @@
                 }
             }, 300);
 
-            window.addEventListener('mousemove', handleGlobalMouseMove);
-            window.addEventListener('mouseup', handleGlobalMouseUp);
-            window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
-            window.addEventListener('touchend', handleGlobalMouseUp);
+            // Главный движок следования за курсором при клике
+            window.addEventListener('mousemove', handleFollowMouseMove);
+            window.addEventListener('click', handleGlobalDocumentClick);
         };
 
         function saveAndBroadcast() {
@@ -392,10 +394,75 @@
 
         function clearAllOverlays() {
             activeOverlays = [];
+            activeMovingId = null;
             saveAndBroadcast();
         }
 
-        // --- УМНОЕ РЕДАКТИРОВАНИЕ ТЕКСТА ПО ДВОЙНОМУ КЛИКУ С ЭФФЕКТОМ ПЕЧАТИ ---
+        // --- УПРАВЛЕНИЕ КЛИКАМИ ДЛЯ ПЕРЕМЕЩЕНИЯ ---
+        function handleElementClick(e, id) {
+            e.stopPropagation();
+            const container = document.getElementById('preview-container');
+            if (!container) return;
+
+            if (activeMovingId === id) {
+                // Второе нажатие: зафиксировать элемент на месте
+                activeMovingId = null;
+                saveAndBroadcast();
+            } else if (!activeMovingId) {
+                // Первое нажатие: взять элемент
+                activeMovingId = id;
+                reconcileScene();
+            }
+        }
+
+        function handleGlobalDocumentClick(e) {
+            // Если элемент двигается, и кликнули в пустое место контейнера предпросмотра — ставим его
+            if (activeMovingId) {
+                const container = document.getElementById('preview-container');
+                if (container && container.contains(e.target)) {
+                    const rect = container.getBoundingClientRect();
+                    const x = Math.max(5, Math.min(95, ((e.clientX - rect.left) / rect.width) * 100));
+                    const y = Math.max(5, Math.min(95, ((e.clientY - rect.top) / rect.height) * 100));
+
+                    const item = activeOverlays.find(i => i.id === activeMovingId);
+                    if (item) {
+                        item.x = x;
+                        item.y = y;
+                    }
+                    activeMovingId = null;
+                    saveAndBroadcast();
+                }
+            }
+        }
+
+        function handleFollowMouseMove(e) {
+            if (!activeMovingId) return;
+            const container = document.getElementById('preview-container');
+            if (!container) return;
+
+            const rect = container.getBoundingClientRect();
+            // Вычисляем координаты курсора строго внутри контейнера в процентах
+            let x = ((e.clientX - rect.left) / rect.width) * 100;
+            let y = ((e.clientY - rect.top) / rect.height) * 100;
+
+            x = Math.max(5, Math.min(95, x));
+            y = Math.max(5, Math.min(95, y));
+
+            const item = activeOverlays.find(i => i.id === activeMovingId);
+            if (item) {
+                item.x = x;
+                item.y = y;
+
+                // Мгновенное обновление позиций на экране через GPU без лагов
+                const nodes = document.querySelectorAll(`[data-id="${activeMovingId}"]`);
+                nodes.forEach(node => {
+                    node.style.left = x + '%';
+                    node.style.top = y + '%';
+                });
+            }
+        }
+
+        // Редактирование текста двойным кликом
         function enableTextInlineEdit(id, textContainer) {
             const item = activeOverlays.find(i => i.id === id);
             if (!item || item.type !== 'text') return;
@@ -416,7 +483,6 @@
                 if (newVal) {
                     item.content = newVal;
                     saveAndBroadcast();
-                    typewriterEffect(textContainer, newVal);
                 } else {
                     textContainer.innerText = currentText;
                 }
@@ -424,27 +490,34 @@
 
             input.onblur = saveChange;
             input.onkeydown = (e) => {
-                if (e.key === 'Enter') {
-                    saveChange();
-                } else if (e.key === 'Escape') {
-                    textContainer.innerText = currentText;
-                }
+                if (e.key === 'Enter') saveChange();
+                else if (e.key === 'Escape') textContainer.innerText = currentText;
             };
         }
 
-        // Эффект живого напечатывания текста
-        function typewriterEffect(container, text) {
-            container.innerHTML = '';
-            let i = 0;
-            const speed = 25; // скорость печати букв
-            function typeWriter() {
-                if (i < text.length) {
-                    container.innerHTML += text.charAt(i);
-                    i++;
-                    setTimeout(typeWriter, speed);
-                }
+        function handleWheelScale(e, id) {
+            e.preventDefault();
+            const item = activeOverlays.find(i => i.id === id);
+            if (!item) return;
+
+            if (!item.scale) item.scale = 1;
+            if (e.deltaY < 0) {
+                item.scale = Math.min(item.scale + 0.1, 3);
+            } else {
+                item.scale = Math.max(item.scale - 0.1, 0.3);
             }
-            typeWriter();
+
+            updateNodeTransform(item.id, item.x, item.y, item.scale || 1);
+            saveAndBroadcast();
+        }
+
+        function updateNodeTransform(id, x, y, scale) {
+            const nodes = document.querySelectorAll(`[data-id="${id}"]`);
+            nodes.forEach(node => {
+                node.style.left = x + '%';
+                node.style.top = y + '%';
+                node.style.transform = `translate3d(-50%, -50%, 0) scale(${scale})`;
+            });
         }
 
         function reconcileScene() {
@@ -469,15 +542,15 @@
 
             activeOverlays.forEach(item => {
                 let node = existingMap.get(item.id);
+                const isMoving = (item.id === activeMovingId);
 
                 if (!node) {
                     node = document.createElement('div');
                     node.dataset.id = item.id;
-                    node.className = `absolute -translate-x-1/2 -translate-y-1/2 ${isInteractive ? 'draggable-item pointer-events-auto' : 'pointer-events-none'}`;
+                    node.className = `absolute -translate-x-1/2 -translate-y-1/2 draggable-item ${isInteractive ? 'pointer-events-auto' : 'pointer-events-none'}`;
                     
                     if (isInteractive) {
-                        node.onmousedown = (e) => startDrag(e, item.id);
-                        node.ontouchstart = (e) => startDrag(e, item.id);
+                        node.onclick = (e) => handleElementClick(e, item.id);
                         node.onwheel = (e) => handleWheelScale(e, item.id);
                     }
 
@@ -485,106 +558,36 @@
                         node.innerHTML = `<div class="${item.size} font-black text-center text-outline-dark text-content cursor-pointer" style="color: ${item.color};">${escapeHtml(item.content)}</div>`;
                         if (isInteractive) {
                             const textDiv = node.querySelector('.text-content');
-                            textDiv.title = "Дважды кликните, чтобы изменить текст";
+                            textDiv.title = "Кликните 1 раз, чтобы двигать. Двойной клик — изменить текст";
                             textDiv.ondblclick = (e) => {
                                 e.stopPropagation();
                                 enableTextInlineEdit(item.id, textDiv);
                             };
                         }
                     } else if (item.type === 'image') {
-                        node.innerHTML = `<img src="${escapeHtml(item.url)}" class="max-w-[400px] rounded-xl shadow-2xl">`;
+                        node.innerHTML = `<img src="${escapeHtml(item.url)}" class="max-w-[400px] rounded-xl shadow-2xl pointer-events-none">`;
                     } else if (item.type === 'video') {
                         const muteAttr = isInteractive ? 'muted' : '';
-                        node.innerHTML = `<video src="${escapeHtml(item.url)}" autoplay loop ${muteAttr} playsinline class="max-w-[450px] rounded-xl shadow-2xl"></video>`;
+                        node.innerHTML = `<video src="${escapeHtml(item.url)}" autoplay loop ${muteAttr} playsinline class="max-w-[450px] rounded-xl shadow-2xl pointer-events-none"></video>`;
                         const vid = node.querySelector('video');
                         if (vid && !isInteractive) vid.volume = item.volume || 0.8;
                     } else if (item.type === 'youtube') {
-                        node.innerHTML = `<iframe src="${escapeHtml(item.url)}" class="w-[480px] aspect-video rounded-xl shadow-2xl border-0 pointer-events-auto" allow="autoplay"></iframe>`;
+                        // В режиме перемещения iframe блокирует клики мыши, поэтому временно ставим прозрачный щит при движении
+                        node.innerHTML = `<div class="relative"><div class="absolute inset-0 z-10 ${isMoving ? 'block' : 'hidden'}"></div><iframe src="${escapeHtml(item.url)}" class="w-[480px] aspect-video rounded-xl shadow-2xl border-0 pointer-events-auto" allow="autoplay"></iframe></div>`;
                     }
                     container.appendChild(node);
                 }
 
+                // Обновляем визуальный класс движения (подсветка зеленой рамкой)
+                if (isInteractive) {
+                    if (isMoving) {
+                        node.classList.add('is-moving');
+                    } else {
+                        node.classList.remove('is-moving');
+                    }
+                }
+
                 updateNodeTransform(item.id, item.x, item.y, item.scale || 1);
-            });
-        }
-
-        // --- УЛЬТРАПЛАВНОЕ ПЕРЕМЕЩЕНИЕ БЕЗ ТЕЛЕПОРТАЦИИ ---
-        function startDrag(e, id) {
-            e.preventDefault();
-            isDragging = true;
-            dragTargetId = id;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            dragStartX = clientX;
-            dragStartY = clientY;
-
-            const item = activeOverlays.find(i => i.id === id);
-            if (item) {
-                elementStartX = item.x;
-                elementStartY = item.y;
-            }
-        }
-
-        function handleGlobalMouseMove(e) {
-            if (!isDragging || !dragTargetId) return;
-            const container = document.getElementById('preview-container');
-            if (!container) return;
-
-            const rect = container.getBoundingClientRect();
-            const deltaX = ((e.clientX - dragStartX) / rect.width) * 100;
-            const deltaY = ((e.clientY - dragStartY) / rect.height) * 100;
-
-            const item = activeOverlays.find(i => i.id === dragTargetId);
-            if (item) {
-                item.x = Math.max(5, Math.min(95, elementStartX + deltaX));
-                item.y = Math.max(5, Math.min(95, elementStartY + deltaY));
-
-                // Двигаем мгновенно через GPU трансформ без задержек
-                const nodes = document.querySelectorAll(`[data-id="${dragTargetId}"]`);
-                nodes.forEach(node => {
-                    node.style.left = item.x + '%';
-                    node.style.top = item.y + '%';
-                });
-            }
-        }
-
-        function handleGlobalTouchMove(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            handleGlobalMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
-        }
-
-        function handleGlobalMouseUp() {
-            if (isDragging) {
-                isDragging = false;
-                dragTargetId = null;
-                saveAndBroadcast();
-            }
-        }
-
-        function handleWheelScale(e, id) {
-            e.preventDefault();
-            const item = activeOverlays.find(i => i.id === id);
-            if (!item) return;
-
-            if (!item.scale) item.scale = 1;
-            if (e.deltaY < 0) {
-                item.scale = Math.min(item.scale + 0.1, 3);
-            } else {
-                item.scale = Math.max(item.scale - 0.1, 0.3);
-            }
-
-            updateNodeTransform(item.id, item.x, item.y, item.scale);
-            saveAndBroadcast();
-        }
-
-        function updateNodeTransform(id, x, y, scale) {
-            const nodes = document.querySelectorAll(`[data-id="${id}"]`);
-            nodes.forEach(node => {
-                node.style.left = x + '%';
-                node.style.top = y + '%';
-                node.style.transform = `translate3d(-50%, -50%, 0) scale(${scale})`;
             });
         }
 
@@ -618,6 +621,7 @@
         }
 
         function removeOverlayItem(id) {
+            if (activeMovingId === id) activeMovingId = null;
             activeOverlays = activeOverlays.filter(i => i.id !== id);
             saveAndBroadcast();
         }
@@ -667,7 +671,7 @@
         function copyOverlayLink() {
             const url = window.location.origin + window.location.pathname + '?mode=overlay';
             navigator.clipboard.writeText(url);
-            alert('Ссылка для OBS скопирована!');
+            alert('Ссылка для OBS успешно скопирована!');
         }
 
         function escapeHtml(str) {
