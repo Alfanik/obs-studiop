@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Live Overlay Studio</title>
+    <title>OBS Live Overlay Studio (Full)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -39,6 +39,10 @@
             </div>
             
             <div class="flex items-center space-x-3">
+                <div class="hidden sm:flex items-center space-x-2 bg-emerald-950/40 border border-emerald-500/30 px-3 py-1.5 rounded-full">
+                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <span class="text-[11px] font-medium text-emerald-300">Облако подключено</span>
+                </div>
                 <button onclick="copyOverlayLink()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center space-x-2">
                     <span>🔗 Ссылка OBS</span>
                 </button>
@@ -69,7 +73,7 @@
                         <div id="preview-elements-layer" class="absolute inset-0 z-10 pointer-events-none"></div>
                         
                         <div class="absolute bottom-2 left-2 bg-black/60 backdrop-blur px-2.5 py-1 rounded text-[10px] text-gray-400 z-20 pointer-events-none">
-                            💡 Зажмите элемент мышкой на превью для перемещения
+                            💡 Перетаскивайте элементы мышкой на превью для изменения позиции
                         </div>
                     </div>
                 </div>
@@ -107,58 +111,85 @@
                     <!-- Панель ТЕКСТ -->
                     <div id="tab-content-text" class="space-y-3">
                         <label class="block text-xs font-medium text-gray-400">Текст сообщения</label>
-                        <textarea id="text-input" oninput="liveUpdateText()" rows="3" placeholder="Введите текст, появится сразу..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-gray-100 focus:outline-none focus:border-indigo-500"></textarea>
+                        <textarea id="text-input" oninput="liveUpdateText()" rows="3" placeholder="Введите текст..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-gray-100 focus:outline-none focus:border-indigo-500"></textarea>
+                        
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block text-[11px] text-gray-400 mb-1">Размер шрифта</label>
-                                <input type="number" id="text-size" value="36" onchange="liveUpdateText()" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs">
+                                <input type="number" id="text-size" value="36" onchange="liveUpdateText()" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs text-gray-200">
                             </div>
                             <div>
-                                <label class="block text-[11px] text-gray-400 mb-1">Цвет текста</label>
-                                <input type="color" id="text-color" value="#ffffff" onchange="liveUpdateText()" class="w-full h-8 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer px-1">
+                                <label class="block text-[11px] text-gray-400 mb-1">Шрифт</label>
+                                <select id="text-font" onchange="liveUpdateText()" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs text-gray-200">
+                                    <option value="system-ui">Стандартный</option>
+                                    <option value="Impact">Impact (Мемы)</option>
+                                    <option value="Courier New">Monospace</option>
+                                    <option value="Georgia">Georgia</option>
+                                </select>
                             </div>
                         </div>
-                        <button onclick="createNewElement('text')" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl text-xs font-semibold transition mt-2 cursor-pointer">Создать новый текст</button>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1">Цвет текста</label>
+                                <input type="color" id="text-color" value="#ffffff" onchange="liveUpdateText()" class="w-full h-8 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer px-1">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1">Цвет фона</label>
+                                <input type="color" id="text-bg-color" value="#000000" onchange="liveUpdateText()" class="w-full h-8 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer px-1">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1">Прозрачность</label>
+                                <input type="range" id="text-bg-opacity" min="0" max="1" step="0.1" value="0.5" oninput="liveUpdateText()" class="w-full accent-indigo-500 mt-2">
+                            </div>
+                        </div>
+
+                        <button onclick="createNewElement('text')" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl text-xs font-semibold transition mt-2 cursor-pointer">Создать новый блок текста</button>
                     </div>
 
                     <!-- Панель ВИДЖЕТЫ -->
                     <div id="tab-content-widgets" class="space-y-3 hidden">
                         <label class="block text-xs font-medium text-gray-400 mb-2">Готовые плашки для стрима</label>
                         <button onclick="sendWidget('telegram')" class="w-full flex items-center justify-between bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 p-3 rounded-xl text-xs font-semibold text-white transition shadow-lg cursor-pointer">
-                            <span class="flex items-center space-x-2">
-                                <span class="text-base">✈️</span>
-                                <span>Telegram: t.me/Dell11q</span>
-                            </span>
+                            <span class="flex items-center space-x-2"><span class="text-base">✈️</span><span>Telegram: t.me/Dell11q</span></span>
                             <span class="bg-black/30 px-2 py-1 rounded text-[10px]">Вывести</span>
                         </button>
-
                         <button onclick="sendWidget('follow')" class="w-full flex items-center justify-between bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 p-3 rounded-xl text-xs font-semibold text-white transition shadow-lg cursor-pointer">
-                            <span class="flex items-center space-x-2">
-                                <span class="text-base">💜</span>
-                                <span>Напоминание: Прожми Фоллоу!</span>
-                            </span>
+                            <span class="flex items-center space-x-2"><span class="text-base">💜</span><span>Напоминание: Прожми Фоллоу!</span></span>
                             <span class="bg-black/30 px-2 py-1 rounded text-[10px]">Вывести</span>
                         </button>
-
                         <button onclick="sendWidget('donate')" class="w-full flex items-center justify-between bg-gradient-to-r from-amber-600 to-orange-700 hover:from-amber-500 hover:to-orange-600 p-3 rounded-xl text-xs font-semibold text-white transition shadow-lg cursor-pointer">
-                            <span class="flex items-center space-x-2">
-                                <span class="text-base">💰</span>
-                                <span>Поддержать (Донат)</span>
-                            </span>
+                            <span class="flex items-center space-x-2"><span class="text-base">💰</span><span>Поддержать (Донат)</span></span>
                             <span class="bg-black/30 px-2 py-1 rounded text-[10px]">Вывести</span>
                         </button>
                     </div>
 
                     <!-- Панель КАРТИНКА -->
                     <div id="tab-content-image" class="space-y-3 hidden">
-                        <label class="block text-xs font-medium text-gray-400">Прямая ссылка на картинку / GIF</label>
+                        <label class="block text-xs font-medium text-gray-400">Загрузить с компьютера</label>
+                        <input type="file" id="image-file-input" accept="image/*" onchange="uploadFileAsBase64('image')" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2 text-xs text-gray-300 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
+                        
+                        <div class="relative flex py-2 items-center">
+                            <div class="flex-grow border-t border-gray-700"></div>
+                            <span class="flex-shrink mx-4 text-[10px] text-gray-500 uppercase">или по ссылке</span>
+                            <div class="flex-grow border-t border-gray-700"></div>
+                        </div>
+
                         <input type="text" id="image-url-input" placeholder="https://site.com/image.png" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-gray-200">
                         <button onclick="sendMediaElement('image')" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl text-xs font-semibold transition mt-2 cursor-pointer">Отправить картинку</button>
                     </div>
 
                     <!-- Панель ВИДЕО -->
                     <div id="tab-content-video" class="space-y-3 hidden">
-                        <label class="block text-xs font-medium text-gray-400">Прямая ссылка на MP4 / WebM</label>
+                        <label class="block text-xs font-medium text-gray-400">Загрузить видео MP4 / WebM</label>
+                        <input type="file" id="video-file-input" accept="video/mp4,video/webm" onchange="uploadFileAsBase64('video')" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2 text-xs text-gray-300 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
+                        
+                        <div class="relative flex py-2 items-center">
+                            <div class="flex-grow border-t border-gray-700"></div>
+                            <span class="flex-shrink mx-4 text-[10px] text-gray-500 uppercase">или по ссылке</span>
+                            <div class="flex-grow border-t border-gray-700"></div>
+                        </div>
+
                         <input type="text" id="video-url-input" placeholder="https://site.com/video.mp4" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-gray-200">
                         <button onclick="sendMediaElement('video')" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl text-xs font-semibold transition mt-2 cursor-pointer">Отправить видео</button>
                     </div>
@@ -176,8 +207,6 @@
         if (isOverlayMode) {
             document.getElementById('obs-overlay-view').classList.remove('hidden');
             document.getElementById('control-panel-view').remove();
-            
-            // Защищенный опрос Firebase специально для OBS без CORS ограничений через JSONP / No-Cors fallback
             setInterval(pollCloudForOBS, 1000);
             pollCloudForOBS();
         } else {
@@ -215,7 +244,6 @@
                 .catch(err => console.error("Ошибка загрузки:", err));
         }
 
-        // Специальная функция для OBS, использующая режим no-cors / JSONP симуляцию
         function pollCloudForOBS() {
             fetch(FIREBASE_DB_URL, { cache: 'no-store' })
                 .then(res => res.json())
@@ -224,19 +252,8 @@
                         renderOverlayElements(data);
                     }
                 })
-                .catch(() => {
-                    // Резервный метод через скрипт-тег если стандартный fetch заблокирован в OBS
-                    const script = document.createElement('script');
-                    script.src = `${FIREBASE_DB_URL}?callback=handleObsData&_=${Date.now()}`;
-                    document.body.appendChild(script);
-                });
+                .catch(() => {});
         }
-
-        window.handleObsData = function(data) {
-            if (data && typeof data === 'object') {
-                renderOverlayElements(data);
-            }
-        };
 
         function renderOverlayElements(state) {
             const container = document.getElementById('active-elements-container');
@@ -253,7 +270,8 @@
                 div.style.top = el.y + '%';
 
                 if (el.type === 'text') {
-                    div.innerHTML = `<div style="font-size: ${el.size}px; color: ${el.color}; background: transparent; text-shadow: 2px 2px 4px rgba(0,0,0,0.9), -1px -1px 0 rgba(0,0,0,0.8); font-weight: bold; white-space: pre-wrap;">${escapeHtml(el.content)}</div>`;
+                    let rgbaBg = hexToRgba(el.bgColor || '#000000', el.bgOpacity !== undefined ? el.bgOpacity : 0.5);
+                    div.innerHTML = `<div style="font-size: ${el.size}px; font-family: ${el.font || 'system-ui'}; color: ${el.color}; background: ${rgbaBg}; padding: 6px 12px; border-radius: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.9); font-weight: bold; white-space: pre-wrap;">${escapeHtml(el.content)}</div>`;
                 } else if (el.type === 'image') {
                     div.innerHTML = `<img src="${el.url}" style="max-width: 400px; height: auto;" />`;
                 } else if (el.type === 'video') {
@@ -299,16 +317,22 @@
         function liveUpdateText() {
             const content = document.getElementById('text-input').value;
             const size = document.getElementById('text-size').value;
+            const font = document.getElementById('text-font').value;
             const color = document.getElementById('text-color').value;
+            const bgColor = document.getElementById('text-bg-color').value;
+            const bgOpacity = document.getElementById('text-bg-opacity').value;
             const anim = document.getElementById('global-animation').value;
 
             if (!activeLiveTextId || !elementsState[activeLiveTextId]) {
                 activeLiveTextId = 'text_' + Date.now();
-                elementsState[activeLiveTextId] = { id: activeLiveTextId, type: 'text', content, size, color, anim, x: 50, y: 50, hidden: false };
+                elementsState[activeLiveTextId] = { id: activeLiveTextId, type: 'text', content, size, font, color, bgColor, bgOpacity, anim, x: 50, y: 50, hidden: false };
             } else {
                 elementsState[activeLiveTextId].content = content;
                 elementsState[activeLiveTextId].size = size;
+                elementsState[activeLiveTextId].font = font;
                 elementsState[activeLiveTextId].color = color;
+                elementsState[activeLiveTextId].bgColor = bgColor;
+                elementsState[activeLiveTextId].bgOpacity = bgOpacity;
                 elementsState[activeLiveTextId].anim = anim;
             }
             saveAndBroadcast();
@@ -320,10 +344,22 @@
             saveAndBroadcast();
         }
 
+        function uploadFileAsBase64(type) {
+            const fileInput = document.getElementById(`${type}-file-input`);
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const anim = document.getElementById('global-animation').value;
+                    addElementToState({ type, url: e.target.result, anim, hidden: false });
+                    fileInput.value = '';
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            }
+        }
+
         function sendMediaElement(type) {
             const urlInput = document.getElementById(`${type}-url-input`);
             const anim = document.getElementById('global-animation').value;
-            
             if (urlInput.value.trim() !== '') {
                 addElementToState({ type, url: urlInput.value.trim(), anim, hidden: false });
                 urlInput.value = '';
@@ -333,44 +369,14 @@
         function sendWidget(kind) {
             const anim = document.getElementById('global-animation').value;
             let html = '';
-            let title = '';
-
             if (kind === 'telegram') {
-                title = 'Telegram: t.me/Dell11q';
-                html = `
-                    <div style="background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border: 2px solid rgba(56, 189, 248, 0.6); padding: 12px 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 28px;">✈️</span>
-                        <div>
-                            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #38bdf8; font-weight: bold;">Telegram канал</div>
-                            <div style="font-size: 20px; color: #ffffff; font-weight: bold;">t.me/Dell11q</div>
-                        </div>
-                    </div>
-                `;
+                html = `<div style="background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border: 2px solid rgba(56, 189, 248, 0.6); padding: 12px 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px;"><span style="font-size: 28px;">✈️</span><div><div style="font-size: 11px; text-transform: uppercase; color: #38bdf8; font-weight: bold;">Telegram канал</div><div style="font-size: 20px; color: #ffffff; font-weight: bold;">t.me/Dell11q</div></div></div>`;
             } else if (kind === 'follow') {
-                title = 'Напоминание: Фоллоу';
-                html = `
-                    <div style="background: rgba(49, 10, 101, 0.9); backdrop-filter: blur(10px); border: 2px solid rgba(168, 85, 247, 0.6); padding: 12px 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 28px;">💜</span>
-                        <div>
-                            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #c084fc; font-weight: bold;">Поддержи стримера</div>
-                            <div style="font-size: 20px; color: #ffffff; font-weight: bold;">Прожми фоллоу!</div>
-                        </div>
-                    </div>
-                `;
+                html = `<div style="background: rgba(49, 10, 101, 0.9); backdrop-filter: blur(10px); border: 2px solid rgba(168, 85, 247, 0.6); padding: 12px 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px;"><span style="font-size: 28px;">💜</span><div><div style="font-size: 11px; text-transform: uppercase; color: #c084fc; font-weight: bold;">Поддержи стримера</div><div style="font-size: 20px; color: #ffffff; font-weight: bold;">Прожми фоллоу!</div></div></div>`;
             } else if (kind === 'donate') {
-                title = 'Напоминание: Донат';
-                html = `
-                    <div style="background: rgba(120, 53, 15, 0.9); backdrop-filter: blur(10px); border: 2px solid rgba(251, 146, 60, 0.6); padding: 12px 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 28px;">💰</span>
-                        <div>
-                            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #fb923c; font-weight: bold;">Поддержать рублём</div>
-                            <div style="font-size: 20px; color: #ffffff; font-weight: bold;">Ссылка в описании</div>
-                        </div>
-                    </div>
-                `;
+                html = `<div style="background: rgba(120, 53, 15, 0.9); backdrop-filter: blur(10px); border: 2px solid rgba(251, 146, 60, 0.6); padding: 12px 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px;"><span style="font-size: 28px;">💰</span><div><div style="font-size: 11px; text-transform: uppercase; color: #fb923c; font-weight: bold;">Поддержать рублём</div><div style="font-size: 20px; color: #ffffff; font-weight: bold;">Ссылка в описании</div></div></div>`;
             }
-
-            addElementToState({ type: 'widget', html, title, anim, hidden: false });
+            addElementToState({ type: 'widget', html, anim, hidden: false });
         }
 
         function addElementToState(data) {
@@ -422,11 +428,9 @@
                 const row = document.createElement('div');
                 row.className = 'flex items-center justify-between bg-gray-800/80 px-3 py-2 rounded-xl text-xs';
                 row.innerHTML = `
-                    <span class="truncate max-w-[180px] text-gray-300 ${el.hidden ? 'line-through text-gray-500' : ''}">${el.type.toUpperCase()}: ${el.title || el.content || (el.url ? el.url.substring(0, 15) : '')}</span>
+                    <span class="truncate max-w-[180px] text-gray-300 ${el.hidden ? 'line-through text-gray-500' : ''}">${el.type.toUpperCase()}: ${el.title || el.content || 'Медиа'}</span>
                     <div class="flex items-center space-x-2">
-                        <button onclick="toggleVisibility('${id}')" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-200 transition cursor-pointer" title="Скрыть/Показать">
-                            ${el.hidden ? '👁️‍🗨️ Скрыт' : '👁️ Глаз'}
-                        </button>
+                        <button onclick="toggleVisibility('${id}')" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-200 transition cursor-pointer">${el.hidden ? '👁️‍🗨️ Скрыт' : '👁️ Глаз'}</button>
                         <button onclick="removeElement('${id}')" class="text-red-400 hover:text-red-300 cursor-pointer">Удалить</button>
                     </div>
                 `;
@@ -460,9 +464,17 @@
         }
 
         function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            return (text || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
+        function hexToRgba(hex, alpha) {
+            let c = hex.replace('#','');
+            if(c.length===3) c = c.split('').map(x => x + x).join('');
+            let num = parseInt(c, 16);
+            return `rgba(${(num>>16)&255}, ${(num>>8)&255}, ${num&255}, ${alpha})`;
+        }
+
+        // Исправление лагов и телепортации: координаты обновляются плавно локально, а в облако улетают только при отпускании мыши!
         function setupDragAndDropOnPreview() {
             const canvas = document.getElementById('preview-canvas');
             let draggedId = null;
@@ -484,6 +496,7 @@
                 elementsState[draggedId].x = Math.max(0, Math.min(100, x));
                 elementsState[draggedId].y = Math.max(0, Math.min(100, y));
                 
+                // Плавное перемещение без дерганий на превью
                 const elDiv = canvas.querySelector(`[data-id="${draggedId}"]`);
                 if (elDiv) {
                     elDiv.style.left = elementsState[draggedId].x + '%';
@@ -494,7 +507,7 @@
             window.addEventListener('mouseup', () => {
                 if (draggedId) {
                     draggedId = null;
-                    saveAndBroadcast();
+                    saveAndBroadcast(); // Отправка в облако только после завершения перетаскивания
                 }
             });
         }
