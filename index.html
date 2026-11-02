@@ -65,7 +65,7 @@
             cursor: move;
             user-select: none;
             touch-action: none;
-            will-change: transform;
+            will-change: transform, left, top;
         }
         .draggable-item:hover {
             outline: 2px dashed #6366f1;
@@ -113,9 +113,6 @@
                         </div>
                         
                         <div class="flex items-center gap-2">
-                            <button onclick="openResizeToolModal()" class="bg-slate-800 hover:bg-slate-700 text-indigo-400 border border-indigo-500/30 px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
-                                <i class="fa-solid fa-expand"></i> Выдать размер
-                            </button>
                             <select id="stream-provider" onchange="onStreamProviderChange()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1 text-slate-300 outline-none focus:border-indigo-500">
                                 <option value="twitch">Twitch Embed</option>
                                 <option value="screenshot">Скриншот игры / Фон</option>
@@ -140,7 +137,7 @@
                         </div>
 
                         <div class="absolute bottom-3 left-3 z-30 bg-slate-900/90 border border-slate-700/80 px-3 py-1 rounded-lg text-[11px] text-slate-300 backdrop-blur pointer-events-none flex items-center gap-1.5">
-                            <i class="fa-solid fa-hand-pointer text-indigo-400"></i> Перетаскивайте мышкой (60 FPS) • Колесико мыши: масштаб
+                            <i class="fa-solid fa-hand-pointer text-indigo-400"></i> Плавное следование за курсором • Колесико мыши: масштаб
                         </div>
                     </div>
                 </div>
@@ -378,51 +375,7 @@
 
     </main>
 
-    <!-- МОДАЛЬНОЕ ОКНО "ВЫДАТЬ РАЗМЕР" (Интерактивная рамка со стрелочками) -->
-    <div id="resize-tool-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-obs-card border border-obs-border rounded-2xl w-full max-w-3xl p-6 shadow-2xl flex flex-col gap-5">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-expand text-indigo-400"></i> Интерактивная настройка размера элементов
-                </h3>
-                <button onclick="closeResizeToolModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Выберите элемент для настройки размера:</label>
-                <select id="resize-target-select" onchange="onResizeTargetChange()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white"></select>
-            </div>
-
-            <!-- Зона со стрелками и интерактивной рамкой -->
-            <div class="relative bg-black/70 border border-slate-800 rounded-xl h-[320px] flex items-center justify-center overflow-hidden select-none">
-                <div id="resize-box-preview" class="relative border-2 border-indigo-500 bg-indigo-950/30 p-4 rounded-xl flex flex-col items-center justify-center shadow-2xl transition-all">
-                    <!-- Стрелочки по бокам и углам -->
-                    <div onmousedown="startResizeDrag('nw', event)" class="absolute -top-3 -left-3 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-nwse-resize shadow"><i class="fa-solid fa-arrow-up-left"></i></div>
-                    <div onmousedown="startResizeDrag('ne', event)" class="absolute -top-3 -right-3 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-nesw-resize shadow"><i class="fa-solid fa-arrow-up-right"></i></div>
-                    <div onmousedown="startResizeDrag('sw', event)" class="absolute -bottom-3 -left-3 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-nesw-resize shadow"><i class="fa-solid fa-arrow-down-left"></i></div>
-                    <div onmousedown="startResizeDrag('se', event)" class="absolute -bottom-3 -right-3 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-nwse-resize shadow"><i class="fa-solid fa-arrow-down-right"></i></div>
-
-                    <div onmousedown="startResizeDrag('top', event)" class="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ns-resize shadow"><i class="fa-solid fa-arrow-up"></i></div>
-                    <div onmousedown="startResizeDrag('bottom', event)" class="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ns-resize shadow"><i class="fa-solid fa-arrow-down"></i></div>
-                    <div onmousedown="startResizeDrag('left', event)" class="absolute top-1/2 -left-3 -translate-y-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ew-resize shadow"><i class="fa-solid fa-arrow-left"></i></div>
-                    <div onmousedown="startResizeDrag('right', event)" class="absolute top-1/2 -right-3 -translate-y-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ew-resize shadow"><i class="fa-solid fa-arrow-right"></i></div>
-
-                    <div id="resize-box-content" class="w-full h-full flex items-center justify-center overflow-hidden"></div>
-                </div>
-            </div>
-
-            <div class="flex justify-between items-center border-t border-slate-800 pt-4">
-                <span class="text-xs text-slate-400 font-mono" id="resize-scale-label">Масштаб: 100%</span>
-                <button onclick="closeResizeToolModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg transition text-xs cursor-pointer">
-                    Готово
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО КОНСТРУКТОРА ВИДЖЕТОВ -->
+    <!-- МОДАЛЬНОЕ ОКНО КОНСТРУКТОРА ВИДЖЕТОВ С КНОПКОЙ "ВЫДАТЬ РАЗМЕР" -->
     <div id="widget-builder-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-obs-card border border-obs-border rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl flex flex-col gap-6 relative">
             <div class="flex justify-between items-center border-b border-slate-800 pb-4">
@@ -448,21 +401,16 @@
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Ширина медиа (px)</label>
-                            <input type="number" id="bw-width" value="300" oninput="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
-                        </div>
-                        <div>
                             <label class="block text-[11px] font-semibold text-slate-400 mb-1">Громкость звука (%)</label>
                             <input type="number" id="bw-vol" value="80" min="0" max="100" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
                         </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Фон карточки</label>
-                        <select id="bw-bg-toggle" onchange="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
-                            <option value="solid" selected>Тёмная подложка (С рамочкой)</option>
-                            <option value="transparent">Прозрачный фон (Без подложки)</option>
-                        </select>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Фон карточки</label>
+                            <select id="bw-bg-toggle" onchange="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
+                                <option value="solid" selected>Тёмная подложка</option>
+                                <option value="transparent">Прозрачный фон</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div>
@@ -473,7 +421,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-400 mb-1">Анимация появления</label>
-                            <select id="bw-anim" onchange="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
+                            <select id="bw-anim" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
                                 <option value="anim-fade">Fade</option>
                                 <option value="anim-zoom">Zoom</option>
                                 <option value="anim-slide">Slide Down</option>
@@ -487,12 +435,20 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col bg-black/60 border border-slate-800 rounded-2xl p-4 items-center justify-center relative min-h-[300px] max-h-[400px] overflow-hidden w-full">
-                    <span class="absolute top-3 left-3 text-[10px] uppercase font-bold text-slate-500 z-10">Живое превью</span>
-                    <div id="builder-preview-box" class="flex flex-col items-center gap-3 p-4 rounded-xl transition-all max-w-full max-h-full overflow-auto">
-                        <div id="bw-prev-media" class="w-full flex items-center justify-center"></div>
-                        <div id="bw-prev-text" class="text-sm font-bold text-white text-center"></div>
+                <!-- Блок предпросмотра с кнопкой "Выдать размер" прямо под ним -->
+                <div class="flex flex-col gap-3">
+                    <div class="flex flex-col bg-black/60 border border-slate-800 rounded-2xl p-4 items-center justify-center relative min-h-[260px] overflow-hidden w-full">
+                        <span class="absolute top-3 left-3 text-[10px] uppercase font-bold text-slate-500 z-10">Живое превью</span>
+                        <div id="builder-preview-box" class="flex flex-col items-center gap-3 p-4 rounded-xl transition-all max-w-full max-h-full overflow-auto">
+                            <div id="bw-prev-media" class="w-full flex items-center justify-center"></div>
+                            <div id="bw-prev-text" class="text-sm font-bold text-white text-center"></div>
+                        </div>
                     </div>
+
+                    <!-- Кнопка "Выдать размер" под окном предпросмотра -->
+                    <button onclick="openWidgetResizeModal()" class="w-full bg-slate-800 hover:bg-slate-700 border border-indigo-500/50 text-indigo-300 font-bold py-2.5 px-4 rounded-xl shadow transition text-xs flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrows-up-down-left-right text-indigo-400"></i> Выдать размер (Растянуть / Расширить)
+                    </button>
                 </div>
             </div>
 
@@ -503,6 +459,43 @@
                 </div>
                 <button onclick="saveCustomWidget()" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition text-sm cursor-pointer flex items-center justify-center gap-2">
                     <i class="fa-solid fa-check"></i> Сохранить и добавить виджет
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ДЕФОРМАЦИИ СО СТРЕЛОЧКАМИ (РАСШИРИТЬ / ВЫТЯНУТЬ) -->
+    <div id="widget-resize-modal" class="hidden fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-obs-card border border-obs-border rounded-2xl w-full max-w-xl p-6 shadow-2xl flex flex-col gap-5">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-split-up-and-left text-indigo-400"></i> Настройка размеров и пропорций
+                </h3>
+                <button onclick="closeWidgetResizeModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400">Тяните за стрелочки: боковые стрелки расширяют виджет по ширине, а верхняя/нижняя — вытягивают по высоте.</p>
+
+            <div class="relative bg-black/80 border border-slate-800 rounded-xl h-[300px] flex items-center justify-center overflow-hidden select-none">
+                <!-- Интерактивный бокс со стрелочками -->
+                <div id="resize-frame-box" class="relative border-2 border-indigo-500 bg-indigo-950/20 p-4 rounded-xl flex flex-col items-center justify-center shadow-2xl transition-all" style="width: 260px; height: 160px;">
+                    
+                    <!-- Стрелки для расширения/вытягивания -->
+                    <div onmousedown="startCustomResize('top', event)" class="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ns-resize shadow"><i class="fa-solid fa-arrow-up"></i></div>
+                    <div onmousedown="startCustomResize('bottom', event)" class="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ns-resize shadow"><i class="fa-solid fa-arrow-down"></i></div>
+                    <div onmousedown="startCustomResize('left', event)" class="absolute top-1/2 -left-3 -translate-y-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ew-resize shadow"><i class="fa-solid fa-arrow-left"></i></div>
+                    <div onmousedown="startCustomResize('right', event)" class="absolute top-1/2 -right-3 -translate-y-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ew-resize shadow"><i class="fa-solid fa-arrow-right"></i></div>
+
+                    <div id="resize-frame-content" class="w-full h-full flex items-center justify-center overflow-hidden"></div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center border-t border-slate-800 pt-4">
+                <span class="text-xs text-slate-400 font-mono" id="resize-dims-label">Ширина: 260px | Высота: 160px</span>
+                <button onclick="closeWidgetResizeModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg transition text-xs cursor-pointer">
+                    Применить размер
                 </button>
             </div>
         </div>
@@ -527,13 +520,15 @@
         let builderMediaSrc = "";
         let builderMediaType = "image";
 
-        // Переменные для модального окна "Выдать размер"
-        let resizingItemId = null;
-        let isResizingBox = false;
-        let resizeDirection = '';
-        let resizeStartX = 0;
-        let resizeStartY = 0;
-        let resizeStartScale = 1;
+        // Размеры для конструктора виджета
+        let builderWidgetWidth = 260;
+        let builderWidgetHeight = 160;
+        let isResizingWidgetBox = false;
+        let resizeDir = '';
+        let startMouseX = 0;
+        let startMouseY = 0;
+        let startW = 260;
+        let startH = 160;
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -578,6 +573,8 @@
                 bgStyle: item.bgStyle,
                 anim: item.anim,
                 scale: item.scale || 1,
+                width: item.width || 'auto',
+                height: item.height || 'auto',
                 x: item.x,
                 y: item.y,
                 hidden: item.hidden,
@@ -820,6 +817,8 @@
                 html: html,
                 anim: anim,
                 scale: 1,
+                width: '280px',
+                height: 'auto',
                 x: 50,
                 y: 50,
                 hidden: false
@@ -855,12 +854,12 @@
             const urlVal = document.getElementById('bw-url').value.trim();
             const mediaSrc = urlVal || builderMediaSrc;
             const textVal = document.getElementById('bw-text').value;
-            const widthVal = document.getElementById('bw-width').value || 300;
             const colorVal = document.getElementById('bw-color').value;
             const bgToggle = document.getElementById('bw-bg-toggle').value;
 
             const prevBox = document.getElementById('builder-preview-box');
-            prevBox.style.maxWidth = '100%';
+            prevBox.style.width = builderWidgetWidth + 'px';
+            prevBox.style.height = builderWidgetHeight + 'px';
             
             if (bgToggle === 'solid') {
                 prevBox.style.background = 'rgba(15, 23, 42, 0.95)';
@@ -873,15 +872,65 @@
             const prevMedia = document.getElementById('bw-prev-media');
             if (mediaSrc) {
                 if (builderMediaType === 'video' || urlVal.endsWith('.mp4') || urlVal.endsWith('.webm')) {
-                    prevMedia.innerHTML = `<video src="${mediaSrc}" autoplay loop muted style="max-width: 100%; width: ${widthVal}px; height: auto; border-radius: 10px;"></video>`;
+                    prevMedia.innerHTML = `<video src="${mediaSrc}" autoplay loop muted style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;"></video>`;
                 } else {
-                    prevMedia.innerHTML = `<img src="${mediaSrc}" style="max-width: 100%; width: ${widthVal}px; height: auto; border-radius: 10px; object-fit: contain;">`;
+                    prevMedia.innerHTML = `<img src="${mediaSrc}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
                 }
             } else {
-                prevMedia.innerHTML = `<div class="text-slate-500 text-xs p-4">Выберите или вставьте медиа</div>`;
+                prevMedia.innerHTML = `<div class="text-slate-500 text-xs p-4">Медиа не выбрано</div>`;
             }
 
             document.getElementById('bw-prev-text').innerText = textVal;
+        }
+
+        // МОДАЛЬНОЕ ОКНО РАСШИРЕНИЯ / ВЫТЯГИВАНИЯ ВИДЖЕТА
+        function openWidgetResizeModal() {
+            document.getElementById('widget-resize-modal').classList.remove('hidden');
+            updateResizeFramePreview();
+        }
+
+        function closeWidgetResizeModal() {
+            document.getElementById('widget-resize-modal').classList.add('hidden');
+            updateBuilderPreview();
+        }
+
+        function updateResizeFramePreview() {
+            const urlVal = document.getElementById('bw-url').value.trim();
+            const mediaSrc = urlVal || builderMediaSrc;
+            const textVal = document.getElementById('bw-text').value;
+            const colorVal = document.getElementById('bw-color').value;
+            const bgToggle = document.getElementById('bw-bg-toggle').value;
+
+            const frameBox = document.getElementById('resize-frame-box');
+            frameBox.style.width = builderWidgetWidth + 'px';
+            frameBox.style.height = builderWidgetHeight + 'px';
+
+            if (bgToggle === 'solid') {
+                frameBox.style.background = 'rgba(15, 23, 42, 0.95)';
+                frameBox.style.border = `2px solid ${colorVal}`;
+            } else {
+                frameBox.style.background = 'transparent';
+                frameBox.style.border = 'none';
+            }
+
+            const content = document.getElementById('resize-frame-content');
+            if (mediaSrc) {
+                content.innerHTML = `<img src="${mediaSrc}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+            } else {
+                content.innerHTML = `<div class="text-slate-400 text-xs">${textVal || 'Медиа'}</div>`;
+            }
+
+            document.getElementById('resize-dims-label').innerText = `Ширина: ${builderWidgetWidth}px | Высота: ${builderWidgetHeight}px`;
+        }
+
+        function startCustomResize(dir, e) {
+            e.preventDefault();
+            isResizingWidgetBox = true;
+            resizeDir = dir;
+            startMouseX = e.clientX;
+            startMouseY = e.clientY;
+            startW = builderWidgetWidth;
+            startH = builderWidgetHeight;
         }
 
         function saveCustomWidget() {
@@ -889,27 +938,26 @@
             const urlVal = document.getElementById('bw-url').value.trim();
             const mediaSrc = urlVal || builderMediaSrc;
             const text = document.getElementById('bw-text').value;
-            const width = document.getElementById('bw-width').value || 300;
             const vol = (parseInt(document.getElementById('bw-vol').value) || 80) / 100;
             const anim = document.getElementById('bw-anim').value;
             const color = document.getElementById('bw-color').value;
             const bgToggle = document.getElementById('bw-bg-toggle').value;
 
-            let bgStyle = bgToggle === 'solid' ? `background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border: 2px solid ${color}; padding: 14px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.7);` : 'padding: 4px;';
+            let bgStyle = bgToggle === 'solid' ? `background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border: 2px solid ${color}; padding: 12px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.7);` : 'padding: 4px;';
 
             let mediaTag = '';
             if (mediaSrc) {
                 if (builderMediaType === 'video' || urlVal.endsWith('.mp4') || urlVal.endsWith('.webm')) {
-                    mediaTag = `<video src="${mediaSrc}" autoplay loop playsinline style="width: ${width}px; max-width: 100%; height: auto; border-radius: 10px;" onloadedmetadata="this.volume=${vol};"></video>`;
+                    mediaTag = `<video src="${mediaSrc}" autoplay loop playsinline style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;" onloadedmetadata="this.volume=${vol};"></video>`;
                 } else {
-                    mediaTag = `<img src="${mediaSrc}" style="width: ${width}px; max-width: 100%; height: auto; object-fit: contain; border-radius: 10px;" />`;
+                    mediaTag = `<img src="${mediaSrc}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;" />`;
                 }
             }
 
             const html = `
-                <div style="${bgStyle} display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center;">
-                    ${mediaTag}
-                    ${text ? `<div style="font-size: 16px; color: #ffffff; font-weight: 800; text-shadow: 2px 2px 4px #000;">${escapeHtml(text)}</div>` : ''}
+                <div style="${bgStyle} width: ${builderWidgetWidth}px; height: ${builderWidgetHeight}px; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; text-align: center; overflow: hidden;">
+                    <div style="flex: 1; width: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center;">${mediaTag}</div>
+                    ${text ? `<div style="font-size: 14px; color: #ffffff; font-weight: 800; text-shadow: 2px 2px 4px #000;">${escapeHtml(text)}</div>` : ''}
                 </div>
             `;
 
@@ -967,70 +1015,7 @@
             showToast('Виджет удален из списка');
         }
 
-        // --- МОДАЛЬНОЕ ОКНО "ВЫДАТЬ РАЗМЕР" СО СТРЕЛОЧКАМИ ---
-        function openResizeToolModal() {
-            const select = document.getElementById('resize-target-select');
-            if (activeOverlays.length === 0) {
-                return showToast('Нет активных элементов на экране', 'warning');
-            }
-
-            select.innerHTML = activeOverlays.map(item => `
-                <option value="${item.id}">${escapeHtml(item.title || item.content || item.url || item.type)} (Масштаб: ${Math.round((item.scale || 1) * 100)}%)</option>
-            `).join('');
-
-            resizingItemId = select.value;
-            document.getElementById('resize-tool-modal').classList.remove('hidden');
-            updateResizeBoxPreview();
-        }
-
-        function closeResizeToolModal() {
-            document.getElementById('resize-tool-modal').classList.add('hidden');
-            resizingItemId = null;
-            renderOverlaysWithoutReloadingMedia();
-            saveAndBroadcast();
-        }
-
-        function onResizeTargetChange() {
-            resizingItemId = document.getElementById('resize-target-select').value;
-            updateResizeBoxPreview();
-        }
-
-        function updateResizeBoxPreview() {
-            const item = activeOverlays.find(i => i.id === resizingItemId);
-            if (!item) return;
-
-            const contentBox = document.getElementById('resize-box-content');
-            const previewBox = document.getElementById('resize-box-preview');
-            const scaleLabel = document.getElementById('resize-scale-label');
-
-            const sc = item.scale || 1;
-            scaleLabel.innerText = `Масштаб: ${Math.round(sc * 100)}%`;
-            previewBox.style.transform = `scale(${sc})`;
-
-            let html = '';
-            if (item.type === 'text') {
-                html = `<div class="text-xl font-bold text-white text-center">${escapeHtml(item.content)}</div>`;
-            } else if (item.type === 'image') {
-                html = `<img src="${item.url}" class="max-w-[200px] object-contain rounded-lg">`;
-            } else if (item.type === 'video') {
-                html = `<video src="${item.url}" autoplay loop muted class="max-w-[220px] rounded-lg"></video>`;
-            } else if (item.type === 'widget') {
-                html = item.html;
-            }
-            contentBox.innerHTML = html;
-        }
-
-        function startResizeDrag(dir, e) {
-            e.preventDefault();
-            isResizingBox = true;
-            resizeDirection = dir;
-            resizeStartX = e.clientX;
-            resizeStartY = e.clientY;
-            const item = activeOverlays.find(i => i.id === resizingItemId);
-            resizeStartScale = item ? (item.scale || 1) : 1;
-        }
-
-        // МАСШТАБИРОВАНИЕ КОЛЕСИКОМ (ТОЛЬКО ЧЕРЕЗ КОЛЕСО)
+        // МАСШТАБИРОВАНИЕ КОЛЕСИКОМ
         function handleCanvasWheel(e) {
             const target = e.target.closest('[data-id]');
             if (!target) return;
@@ -1046,12 +1031,11 @@
                 item.scale = Math.max(item.scale - 0.1, 0.3);
             }
 
-            // Мгновенное аппаратное применение без лагов
             target.style.transform = `translate3d(-50%, -50%, 0) scale(${item.scale})`;
             saveAndBroadcast();
         }
 
-        // УЛЬТРАПЛАВНОЕ ПЕРЕМЕЩЕНИЕ БЕЗ ТЕЛЕПОРТАЦИИ И ЛАГОВ (60 FPS)
+        // МОМЕНТАЛЬНОЕ СЛЕДОВАНИЕ ЗА КУРСОРОМ БЕЗ ТЕЛЕПОРТАЦИИ
         function startDrag(e, itemId) {
             e.preventDefault();
             isDragging = true;
@@ -1072,18 +1056,17 @@
             const clientX = e.clientX;
             const clientY = e.clientY;
 
-            // Обработка интерактивного изменения размера в окне "Выдать размер"
-            if (isResizingBox && resizingItemId) {
-                const deltaX = clientX - resizeStartX;
-                const deltaY = clientY - resizeStartY;
-                const delta = (deltaX + deltaY) / 150;
+            // Обработка растягивания виджета стрелочками
+            if (isResizingWidgetBox) {
+                const deltaX = clientX - startMouseX;
+                const deltaY = clientY - startMouseY;
 
-                const item = activeOverlays.find(i => i.id === resizingItemId);
-                if (item) {
-                    let newScale = Math.min(Math.max(resizeStartScale + delta, 0.3), 3);
-                    item.scale = newScale;
-                    updateResizeBoxPreview();
-                }
+                if (resizeDir === 'right') builderWidgetWidth = Math.max(120, Math.min(600, startW + deltaX));
+                if (resizeDir === 'left') builderWidgetWidth = Math.max(120, Math.min(600, startW - deltaX));
+                if (resizeDir === 'bottom') builderWidgetHeight = Math.max(80, Math.min(500, startH + deltaY));
+                if (resizeDir === 'top') builderWidgetHeight = Math.max(80, Math.min(500, startH - deltaY));
+
+                updateResizeFramePreview();
                 return;
             }
 
@@ -1106,7 +1089,7 @@
                 item.x = newX;
                 item.y = newY;
 
-                // Перемещение через аппаратный translate3d без перерисовки DOM
+                // Двигаем прямо в реальном времени без задержек
                 const targetNode = container.querySelector(`[data-id="${dragTargetId}"]`);
                 if (targetNode) {
                     targetNode.style.left = newX + '%';
@@ -1116,21 +1099,21 @@
         }
 
         function handleGlobalTouchMove(e) {
-            if (!isDragging && !isResizingBox) return;
+            if (!isDragging && !isResizingWidgetBox) return;
             e.preventDefault();
             const touch = e.touches[0];
             handleGlobalMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
         }
 
         function handleGlobalMouseUp() {
-            if (isResizingBox) {
-                isResizingBox = false;
-                resizeDirection = '';
+            if (isResizingWidgetBox) {
+                isResizingWidgetBox = false;
+                resizeDir = '';
             }
             if (isDragging) {
                 isDragging = false;
                 dragTargetId = null;
-                saveAndBroadcast(); // Сохранение в базу происходит ровно в момент отпускания мыши
+                saveAndBroadcast(); // Сохранение в базу улетает ровно в момент отпускания мыши
             }
         }
 
