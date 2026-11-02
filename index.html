@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Live Overlay Studio (Polling)</title>
+    <title>OBS Live Overlay Studio</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -39,10 +39,6 @@
             </div>
             
             <div class="flex items-center space-x-3">
-                <div class="hidden sm:flex items-center space-x-2 bg-emerald-950/40 border border-emerald-500/30 px-3 py-1.5 rounded-full">
-                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span class="text-[11px] font-medium text-emerald-300">Связь с облаком активна</span>
-                </div>
                 <button onclick="copyOverlayLink()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center space-x-2">
                     <span>🔗 Ссылка OBS</span>
                 </button>
@@ -172,9 +168,7 @@
     </div>
 
     <script>
-        // ВАША ССЫЛКА НА БАЗУ ДАННЫХ FIREBASE:
         const FIREBASE_DB_URL = "https://alfanik-ac5d7-default-rtdb.firebaseio.com/obs_state.json";
-
         const isOverlayMode = new URLSearchParams(window.location.search).has('mode');
         let elementsState = {};
         let activeLiveTextId = null;
@@ -182,9 +176,10 @@
         if (isOverlayMode) {
             document.getElementById('obs-overlay-view').classList.remove('hidden');
             document.getElementById('control-panel-view').remove();
-            // Запуск опроса облака каждые 1.5 секунды специально для OBS
-            setInterval(fetchStateFromCloud, 1500);
-            fetchStateFromCloud();
+            
+            // Защищенный опрос Firebase специально для OBS без CORS ограничений через JSONP / No-Cors fallback
+            setInterval(pollCloudForOBS, 1000);
+            pollCloudForOBS();
         } else {
             initControlPanel();
             setInterval(fetchStateFromCloud, 1500);
@@ -205,6 +200,7 @@
         }
 
         function fetchStateFromCloud() {
+            if (isOverlayMode) return;
             fetch(FIREBASE_DB_URL)
                 .then(res => res.json())
                 .then(data => {
@@ -213,16 +209,34 @@
                     } else {
                         elementsState = {};
                     }
-
-                    if (isOverlayMode) {
-                        renderOverlayElements(elementsState);
-                    } else {
-                        updatePreviewCanvas();
-                        updateActiveList();
-                    }
+                    updatePreviewCanvas();
+                    updateActiveList();
                 })
                 .catch(err => console.error("Ошибка загрузки:", err));
         }
+
+        // Специальная функция для OBS, использующая режим no-cors / JSONP симуляцию
+        function pollCloudForOBS() {
+            fetch(FIREBASE_DB_URL, { cache: 'no-store' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && typeof data === 'object') {
+                        renderOverlayElements(data);
+                    }
+                })
+                .catch(() => {
+                    // Резервный метод через скрипт-тег если стандартный fetch заблокирован в OBS
+                    const script = document.createElement('script');
+                    script.src = `${FIREBASE_DB_URL}?callback=handleObsData&_=${Date.now()}`;
+                    document.body.appendChild(script);
+                });
+        }
+
+        window.handleObsData = function(data) {
+            if (data && typeof data === 'object') {
+                renderOverlayElements(data);
+            }
+        };
 
         function renderOverlayElements(state) {
             const container = document.getElementById('active-elements-container');
