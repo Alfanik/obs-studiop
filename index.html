@@ -1,341 +1,874 @@
-    header {
-        background: rgba(17, 24, 39, 0.9);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid #243049;
-        padding: 12px 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
-    }
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS Live Overlay Studio Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Montserrat:wght@700;900&family=Press+Start+2P&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #080c14;
+            --bg-card: #111827;
+            --panel: #151d30;
+            --border: #243049;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
 
-    .logo-box {
-        background: #6366f1;
-        color: #fff;
-        padding: 8px;
-        border-radius: 12px;
-        font-weight: 900;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-    }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
 
-    .btn {
-        background: #6366f1;
-        color: white;
-        border: none;
-        padding: 10px 18px;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 13px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: background 0.2s, transform 0.1s;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-    }
-    .btn:hover { background: #4f46e5; }
-    .btn-emerald { background: #059669; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3); }
-    .btn-emerald:hover { background: #047857; }
-    .btn-purple { background: #7c3aed; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); }
-    .btn-purple:hover { background: #6d28d9; }
-    .btn-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .btn-red:hover { background: rgba(239, 68, 68, 0.4); }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-    main { flex: 1; display: flex; flex-direction: column; position: relative; }
-    .operator-grid {
-        flex: 1;
-        padding: 24px;
-        display: grid;
-        grid-template-columns: 1.4fr 1fr;
-        gap: 24px;
-        max-width: 1800px;
-        margin: 0 auto;
-        width: 100%;
-    }
-    @media(max-width: 1024px) { .operator-grid { grid-template-columns: 1fr; } }
+        body.obs-overlay-mode {
+            background-color: transparent !important;
+            overflow: hidden;
+        }
 
-    .card {
-        background: #111827;
-        border: 1px solid #243049;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
-        display: flex;
-        flex-direction: column;
-    }
+        header {
+            background: rgba(17, 24, 39, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+        }
 
-    .preview-box {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 16/9;
-        background: #000;
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid #1f2937;
-        user-select: none;
-    }
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-    .draggable-item {
-        cursor: pointer;
-        user-select: none;
-        position: absolute;
-        will-change: transform, left, top;
-        transition: none !important;
-    }
-    .draggable-item:hover {
-        outline: 2px dashed #6366f1;
-        outline-offset: 4px;
-    }
-    .is-moving {
-        outline: 3px solid #22c55e !important;
-        outline-offset: 6px;
-        z-index: 999 !important;
-        filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.8));
-    }
+        .logo-icon {
+            background: var(--accent);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
 
-    .tabs-header {
-        display: flex;
-        gap: 8px;
-        border-bottom: 1px solid #243049;
-        margin-bottom: 20px;
-        padding-bottom: 4px;
-        overflow-x: auto;
-    }
-    .tab-btn {
-        background: transparent;
-        border: none;
-        color: #94a3b8;
-        padding: 8px 14px;
-        font-size: 13px;
-        font-weight: 700;
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        transition: color 0.2s;
-    }
-    .tab-btn.active { color: #fff; border-color: #6366f1; }
+        h1 { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: white; }
+        .subtitle { font-size: 11px; color: var(--text-muted); }
 
-    .form-group { margin-bottom: 16px; }
-    .form-label { display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
-    .form-input, .form-select, .form-textarea {
-        width: 100%;
-        background: #0f172a;
-        border: 1px solid #334155;
-        color: #fff;
-        padding: 10px 14px;
-        border-radius: 10px;
-        font-size: 13px;
-        outline: none;
-        transition: border-color 0.2s;
-    }
-    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #6366f1; }
-    .form-textarea { resize: none; }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .btn:hover { background: var(--accent-hover); }
+        .btn:active { transform: scale(0.98); }
+        .btn-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); box-shadow: none; }
+        .btn-red:hover { background: rgba(239, 68, 68, 0.35); }
+        .btn-green { background: #059669; }
+        .btn-green:hover { background: #047857; }
+        .btn-purple { background: #9333ea; }
+        .btn-purple:hover { background: #7e22ce; }
 
-    .text-outline-dark {
-        text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0px 4px 12px rgba(0,0,0,0.9);
-    }
-    .text-outline-glow {
-        text-shadow: 0 0 15px rgba(99, 102, 241, 0.9), 0 0 30px rgba(99, 102, 241, 0.5), -2px -2px 0 #000, 2px -2px 0 #000;
-    }
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
 
-    .toast {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: #6366f1;
-        color: #fff;
-        padding: 12px 20px;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 600;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        z-index: 100;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-</style>
+        .operator-grid {
+            flex: 1;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 24px;
+            max-width: 1920px;
+            margin: 0 auto;
+            width: 100%;
+            overflow-y: auto;
+        }
 
+        @media(max-width: 1024px) {
+            .operator-grid { grid-template-columns: 1fr; }
+        }
 
-<div style="display: flex; align-items: center; gap: 16px;">
-    <div style="display: flex; align-items: center; gap: 8px; background: rgba(5, 150, 105, 0.1); border: 1px solid rgba(5, 150, 105, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #34d399;">
-        <span style="width: 8px; height: 8px; background: #34d399; border-radius: 50%; display: inline-block;"></span>
-        <span>Синхронизация активна</span>
-    </div>
-    <button onclick="copyOverlayLink()" class="btn">
-        <i class="fa-solid fa-link"></i> Ссылка OBS
-    </button>
-</div>
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
 
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-    <div style="display: flex; flex-direction: column; gap: 24px;">
-        
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%; display: inline-block;"></span>
-                    <h2 style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #cbd5e1;">Клик 1 раз — взять, Клик 2 — поставить. Двойной клик на текст — правка</h2>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <select id="stream-provider" onchange="onStreamProviderChange()" class="form-select" style="width: auto; padding: 6px 10px;">
-                        <option value="twitch">Twitch Embed</option>
-                        <option value="screenshot">Фон / Скриншот</option>
-                        <option value="testvideo">Тест видео</option>
-                    </select>
-                    <input type="text" id="twitch-channel-input" value="dell11q" onchange="onStreamProviderChange()" class="form-input" style="width: 100px; padding: 6px 10px;">
-                </div>
-            </div>
+        .card-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-            <div id="preview-container" class="preview-box">
-                <div id="preview-bg-holder" style="width: 100%; height: 100%; pointer-events: none;">
-                    <iframe id="twitch-frame" src="https://player.twitch.tv/?channel=dell11q&parent=localhost&muted=true" style="width: 100%; height: 100%; border: 0; pointer-events: auto;"></iframe>
-                </div>
-                <div id="operator-overlay-canvas" style="position: absolute; inset: 0; z-index: 20; overflow: hidden; pointer-events: auto;"></div>
+        #preview-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: black;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
+            user-select: none;
+        }
+
+        #preview-bg-holder {
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #preview-bg-holder iframe, #preview-bg-holder img, #preview-bg-holder video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: none;
+        }
+
+        .overlay-canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            overflow: hidden;
+        }
+
+        .draggable-item {
+            position: absolute;
+            cursor: pointer;
+            user-select: none;
+            will-change: transform, left, top;
+            transform: translate(-50%, -50%);
+            transition: transform 0.05s ease-out;
+        }
+        .draggable-item:hover {
+            outline: 2px dashed var(--accent);
+            outline-offset: 4px;
+        }
+        .draggable-item.is-moving {
+            outline: 3px solid #22c55e !important;
+            outline-offset: 6px;
+            z-index: 999 !important;
+            filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.8));
+        }
+
+        .text-outline-dark {
+            text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0px 4px 12px rgba(0,0,0,0.9);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input[type="text"], input[type="url"], textarea, select {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+        }
+
+        textarea { resize: none; height: 75px; }
+
+        .row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .active-list {
+            flex: 1;
+            min-height: 140px;
+            max-height: 250px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 4px;
+        }
+
+        .active-item {
+            background: #090d16;
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .hidden-view { display: none !important; }
+
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--accent);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <header id="main-header">
+        <div class="header-logo">
+            <div class="logo-icon"><i class="fa-solid fa-tower-broadcast"></i></div>
+            <div>
+                <h1>OBS LIVE OVERLAY STUDIO</h1>
+                <div class="subtitle">Ультрабыстрый пульт без лагов</div>
             </div>
         </div>
-
-        <div class="card" style="flex: 1;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-layer-group" style="color: #6366f1;"></i>
-                    <h2 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #cbd5e1;">Активные элементы</h2>
-                    <span id="active-count-badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; font-family: monospace; padding: 2px 8px; border-radius: 10px; font-size: 11px;">0</span>
-                </div>
-                <button onclick="clearAllOverlays()" class="btn btn-red" style="padding: 6px 12px; font-size: 11px;">
-                    <i class="fa-solid fa-trash-can"></i> Очистить всё
-                </button>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="background: rgba(5, 150, 105, 0.2); border: 1px solid rgba(5, 150, 105, 0.4); padding: 6px 14px; border-radius: 20px; font-size: 11px; color: #34d399; display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; background: #34d399; border-radius: 50%; display: inline-block;"></span>
+                Синхронизация активна
             </div>
-            <div id="active-elements-list" style="flex: 1; min-height: 120px; max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-                <div id="empty-active-state" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; color: #64748b; border: 1px dashed #334155; border-radius: 12px;">
-                    <i class="fa-solid fa-ghost" style="font-size: 24px; margin-bottom: 8px;"></i>
-                    <p style="font-size: 12px;">Экран пуст. Добавьте элемент справа.</p>
-                </div>
-            </div>
+            <button class="btn" onclick="copyOverlayLink()"><i class="fa-solid fa-link"></i> Ссылка OBS</button>
         </div>
+    </header>
 
-    </div>
-
-    <div>
-        <div class="card">
-            <div class="tabs-header">
-                <button id="tab-btn-text" onclick="switchControlTab('text')" class="tab-btn active"><i class="fa-solid fa-font" style="color: #6366f1;"></i> Текст</button>
-                <button id="tab-btn-image" onclick="switchControlTab('image')" class="tab-btn"><i class="fa-solid fa-image" style="color: #10b981;"></i> Картинка</button>
-                <button id="tab-btn-video" onclick="switchControlTab('video')" class="tab-btn"><i class="fa-solid fa-video" style="color: #a855f7;"></i> Видео</button>
-            </div>
-
-            <!-- TAB TEXT -->
-            <div id="tab-content-text">
-                <div class="form-group">
-                    <label class="form-label">Текст оверлея (Живой ввод)</label>
-                    <textarea id="text-input" rows="3" oninput="onLiveTextTyping()" class="form-textarea">ПРИВЕТ СТРИМ! 🔥 ВСЕМ ПРИЯТНОГО ПРОСМОТРА!</textarea>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="form-group">
-                    <div>
-                        <label class="form-label">Шрифт</label>
-                        <select id="text-font" onchange="onLiveTextStyleChange()" class="form-select">
-                            <option value="'Montserrat', sans-serif" selected>Montserrat</option>
-                            <option value="'Inter', sans-serif">Inter</option>
-                            <option value="'Press Start 2P', cursive">Pixel</option>
-                            <option value="'Roboto Condensed', sans-serif">Esports</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label">Размер</label>
-                        <select id="text-size" onchange="onLiveTextStyleChange()" class="form-select">
-                            <option value="text-2xl">Маленький</option>
-                            <option value="text-4xl" selected>Средний</option>
-                            <option value="text-6xl">Большой</option>
-                            <option value="text-7xl">Огромный</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="form-group">
-                    <div>
-                        <label class="form-label">Цвет</label>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <input type="color" id="text-color" value="#ffffff" oninput="onLiveTextStyleChange()" style="width: 36px; height: 36px; background: transparent; border: none; cursor: pointer;">
-                            <span id="text-color-hex" style="font-size: 12px; font-family: monospace; color: #94a3b8;">#ffffff</span>
+    <main>
+        <div id="view-operator" class="operator-grid">
+            
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></span> Предпросмотр (Клик 1 — взять, Клик 2 — поставить)</div>
+                        <div style="display: flex; gap: 8px;">
+                            <select id="stream-provider" onchange="onStreamProviderChange()" style="padding: 6px 10px; font-size: 11px;">
+                                <option value="twitch">Twitch Embed</option>
+                                <option value="screenshot">Скриншот / Фон</option>
+                                <option value="testvideo">Тест видео</option>
+                            </select>
+                            <input type="text" id="twitch-channel-input" value="dell11q" onchange="onStreamProviderChange()" style="width: 90px; padding: 6px 10px; font-size: 11px;">
                         </div>
                     </div>
-                    <div>
-                        <label class="form-label">Эффект</label>
-                        <select id="text-effect" onchange="onLiveTextStyleChange()" class="form-select">
-                            <option value="text-outline-dark" selected>Черный контур</option>
-                            <option value="text-outline-glow">Неоновое свечение</option>
-                            <option value="none">Без эффекта</option>
-                        </select>
+
+                    <div id="preview-container">
+                        <div id="preview-bg-holder">
+                            <iframe id="twitch-frame" src="https://player.twitch.tv/?channel=dell11q&parent=localhost&muted=true" style="width:150%; height:150%; border:0; margin-left:-25%; margin-top:-25%;"></iframe>
+                        </div>
+                        <div id="operator-overlay-canvas" class="overlay-canvas"></div>
+                        <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(15,23,42,0.8); padding: 4px 10px; border-radius: 6px; font-size: 10px; color: #cbd5e1; backdrop-filter: blur(4px);">
+                            💡 Двойной клик на текст — правка • Колесико — масштаб
+                        </div>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Фон карточки</label>
-                    <select id="text-bg-style" onchange="onLiveTextStyleChange()" class="form-select">
-                        <option value="transparent" selected>Прозрачный</option>
-                        <option value="dark">Тёмная подложка</option>
-                        <option value="indigo">Фиолетовая подложка</option>
-                    </select>
+                <div class="card" style="flex: 1;">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fa-solid fa-layer-group"></i> Активные элементы (<span id="active-count-badge">0</span>)</div>
+                        <button class="btn btn-red" style="padding: 4px 10px; font-size: 11px;" onclick="clearAllOverlays()"><i class="fa-solid fa-trash"></i> Очистить всё</button>
+                    </div>
+                    <div id="active-elements-list" class="active-list">
+                        <div style="text-align: center; color: var(--text-muted); padding: 30px; font-size: 12px;">Экран пуст. Добавьте элемент справа.</div>
+                    </div>
                 </div>
-
-                <button onclick="createNewTextOverlay()" class="btn" style="width: 100%; justify-content: center; padding: 12px; margin-top: 8px;">
-                    <i class="fa-solid fa-plus"></i> Создать текстовый блок
-                </button>
             </div>
 
-            <!-- TAB IMAGE -->
-            <div id="tab-content-image" style="display: none;">
-                <div class="form-group">
-                    <label class="form-label">Загрузить фото с компьютера (PNG, JPG, GIF)</label>
-                    <input type="file" id="image-file-input" accept="image/*" onchange="handleImageFileUpload(event)" class="form-input" style="padding: 8px; cursor: pointer;">
+            <div class="card">
+                <div class="tabs">
+                    <button id="tab-btn-text" class="tab-btn active" onclick="switchTab('text')"><i class="fa-solid fa-font"></i> Текст</button>
+                    <button id="tab-btn-image" class="tab-btn" onclick="switchTab('image')"><i class="fa-solid fa-image"></i> Картинка</button>
+                    <button id="tab-btn-video" class="tab-btn" onclick="switchTab('video')"><i class="fa-solid fa-video"></i> Видео / YouTube</button>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px; margin: 12px 0; color: #64748b; font-size: 11px;">
-                    <hr style="flex: 1; border-color: #334155;"> или по ссылке <hr style="flex: 1; border-color: #334155;">
-                </div>
-                <div class="form-group">
-                    <input type="url" id="image-url-input" placeholder="https://site.com/image.png" class="form-input">
-                </div>
-                <button onclick="sendImageUrlOverlay()" class="btn btn-emerald" style="width: 100%; justify-content: center; padding: 12px;">
-                    <i class="fa-solid fa-image"></i> Вывести изображение
-                </button>
-            </div>
 
-            <!-- TAB VIDEO / YOUTUBE -->
-            <div id="tab-content-video" style="display: none;">
-                <div class="form-group">
-                    <label class="form-label">Загрузить видео файл (MP4, WebM)</label>
-                    <input type="file" id="video-file-input" accept="video/mp4,video/webm" onchange="handleVideoFileUpload(event)" class="form-input" style="padding: 8px; cursor: pointer;">
+                <!-- Текст -->
+                <div id="tab-content-text" style="display: flex; flex-direction: column; gap: 14px;">
+                    <div class="form-group">
+                        <label>Текст оверлея</label>
+                        <textarea id="text-input">ПРИВЕТ СТРИМ! 🔥</textarea>
+                    </div>
+                    <div class="row-2">
+                        <div class="form-group">
+                            <label>Размер</label>
+                            <select id="text-size">
+                                <option value="font-size: 24px;">Маленький</option>
+                                <option value="font-size: 36px;" selected>Средний</option>
+                                <option value="font-size: 56px;">Большой</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Цвет</label>
+                            <input type="color" id="text-color" value="#ffffff" style="height: 38px; cursor: pointer; padding: 2px;">
+                        </div>
+                    </div>
+                    <button class="btn" onclick="createNewTextOverlay()"><i class="fa-solid fa-plus"></i> Создать текстовый блок</button>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px; margin: 12px 0; color: #64748b; font-size: 11px;">
-                    <hr style="flex: 1; border-color: #334155;"> или ссылка (YouTube / MP4) <hr style="flex: 1; border-color: #334155;">
+
+                <!-- Картинка -->
+                <div id="tab-content-image" style="display: none; flex-direction: column; gap: 14px;">
+                    <div class="form-group">
+                        <label>Загрузить с компьютера (PNG, GIF, JPG)</label>
+                        <input type="file" id="image-file-input" accept="image/*" onchange="handleImageFile(event)" style="background:#090d16; border:1px solid var(--border); padding:8px; border-radius:10px; color:white; font-size:12px;">
+                    </div>
+                    <div style="text-align: center; color: var(--text-muted); font-size: 11px;">Или по ссылке:</div>
+                    <div class="form-group">
+                        <input type="url" id="image-url-input" placeholder="https://site.com/image.png">
+                    </div>
+                    <button class="btn btn-green" onclick="sendImageUrlOverlay()"><i class="fa-solid fa-image"></i> Вывести изображение</button>
                 </div>
-                <div class="form-group">
-                    <input type="url" id="video-url-input" placeholder="https://www.youtube.com/watch?v=... или .mp4" class="form-input">
+
+                <!-- Видео -->
+                <div id="tab-content-video" style="display: none; flex-direction: column; gap: 14px;">
+                    <div class="form-group">
+                        <label>Загрузить видео с компьютера (MP4, WebM)</label>
+                        <input type="file" id="video-file-input" accept="video/mp4,video/webm" onchange="handleVideoFile(event)" style="background:#090d16; border:1px solid var(--border); padding:8px; border-radius:10px; color:white; font-size:12px;">
+                    </div>
+                    <div style="text-align: center; color: var(--text-muted); font-size: 11px;">Или по ссылке (MP4 / YouTube):</div>
+                    <div class="form-group">
+                        <input type="url" id="video-url-input" placeholder="https://www.youtube.com/watch?v=... или .mp4">
+                    </div>
+                    <div class="form-group">
+                        <label>Громкость (%)</label>
+                        <input type="range" id="video-volume" min="0" max="100" value="80" style="accent-color: var(--accent);">
+                    </div>
+                    <button class="btn btn-purple" onclick="sendVideoUrlOverlay()"><i class="fa-solid fa-video"></i> Вывести видео / YouTube</button>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Громкость (%)</label>
-                    <input type="range" id="video-volume" min="0" max="100" value="80" style="width: 100%; accent-color: #a855f7;">
-                </div>
-                <button onclick="sendVideoUrlOverlay()" class="btn btn-purple" style="width: 100%; justify-content: center; padding: 12px;">
-                    <i class="fa-solid fa-video"></i> Вывести видео / YouTube
-                </button>
             </div>
 
         </div>
-    </div>
 
-</div>
+        <div id="view-overlay" class="hidden-view" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden;">
+            <div id="obs-render-canvas" style="position: relative; width: 100%; height: 100%;"></div>
+        </div>
+    </main>
 
-<div id="view-overlay" style="display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden;">
-    <div id="obs-render-canvas" style="position: relative; width: 100%; height: 100%;"></div>
-</div>
+    <div id="toast-container"></div>
+
+    <script>
+        const STORAGE_KEY = "obs_studio_pro_v8";
+        const bc = new BroadcastChannel('obs_studio_sync_v8');
+        
+        let activeOverlays = [];
+        let activeMovingId = null;
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('mode') === 'overlay') {
+                switchView('overlay');
+            } else {
+                switchView('operator');
+            }
+
+            loadLocalCache();
+
+            bc.onmessage = (event) => {
+                if (event.data.type === 'SYNC') {
+                    activeOverlays = event.data.state;
+                    reconcileScene();
+                }
+            };
+
+            window.addEventListener('storage', (e) => {
+                if (e.key === STORAGE_KEY) {
+                    try {
+                        activeOverlays = JSON.parse(e.newValue || '[]');
+                        reconcileScene();
+                    } catch(err) {}
+                }
+            });
+
+            setInterval(() => {
+                if (!activeMovingId) {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (JSON.stringify(parsed) !== JSON.stringify(activeOverlays)) {
+                            activeOverlays = parsed;
+                            reconcileScene();
+                        }
+                    }
+                }
+            }, 300);
+
+            window.addEventListener('mousemove', handleFollowMouseMove);
+            window.addEventListener('click', handleGlobalDocumentClick);
+        };
+
+        function saveAndBroadcast() {
+            const jsonString = JSON.stringify(activeOverlays);
+            localStorage.setItem(STORAGE_KEY, jsonString);
+            bc.postMessage({ type: 'SYNC', state: activeOverlays });
+            reconcileScene();
+        }
+
+        function loadLocalCache() {
+            try {
+                const cached = localStorage.getItem(STORAGE_KEY);
+                if (cached) {
+                    activeOverlays = JSON.parse(cached);
+                    reconcileScene();
+                }
+            } catch(e) {}
+        }
+
+        function switchView(mode) {
+            if (mode === 'overlay') {
+                document.body.classList.add('obs-overlay-mode');
+                document.getElementById('main-header').classList.add('hidden-view');
+                document.getElementById('view-operator').classList.add('hidden-view');
+                document.getElementById('view-overlay').classList.remove('hidden-view');
+            } else {
+                document.body.classList.remove('obs-overlay-mode');
+                document.getElementById('main-header').classList.remove('hidden-view');
+                document.getElementById('view-operator').classList.remove('hidden-view');
+                document.getElementById('view-overlay').classList.add('hidden-view');
+            }
+        }
+
+        function createNewTextOverlay() {
+            const textVal = document.getElementById('text-input').value.trim() || 'Текст';
+            activeOverlays.push({
+                id: 'el_' + Date.now(),
+                type: 'text',
+                content: textVal,
+                style: document.getElementById('text-size').value,
+                color: document.getElementById('text-color').value,
+                scale: 1,
+                x: 50,
+                y: 50
+            });
+            saveAndBroadcast();
+            showToast('Текстовый блок создан');
+        }
+
+        function handleImageFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                activeOverlays.push({
+                    id: 'el_' + Date.now(),
+                    type: 'image',
+                    url: evt.target.result,
+                    scale: 1,
+                    x: 50,
+                    y: 50
+                });
+                saveAndBroadcast();
+                showToast('Картинка загружена');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function sendImageUrlOverlay() {
+            const url = document.getElementById('image-url-input').value.trim();
+            if (!url) return showToast('Укажите URL картинки');
+            activeOverlays.push({
+                id: 'el_' + Date.now(),
+                type: 'image',
+                url: url,
+                scale: 1,
+                x: 50,
+                y: 50
+            });
+            document.getElementById('image-url-input').value = '';
+            saveAndBroadcast();
+            showToast('Изображение добавлено');
+        }
+
+        function handleVideoFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const vol = (parseInt(document.getElementById('video-volume').value) || 80) / 100;
+                activeOverlays.push({
+                    id: 'el_' + Date.now(),
+                    type: 'video',
+                    url: evt.target.result,
+                    scale: 1,
+                    x: 50,
+                    y: 50,
+                    volume: vol
+                });
+                saveAndBroadcast();
+                showToast('Видео загружено');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function sendVideoUrlOverlay() {
+            const rawUrl = document.getElementById('video-url-input').value.trim();
+            if (!rawUrl) return showToast('Укажите URL видео');
+            const vol = (parseInt(document.getElementById('video-volume').value) || 80) / 100;
+            
+            let finalUrl = rawUrl;
+            let type = 'video';
+            
+            if (rawUrl.includes('youtube.com') || rawUrl.includes('youtu.be')) {
+                type = 'youtube';
+                let videoId = '';
+                if (rawUrl.includes('youtu.be/')) {
+                    videoId = rawUrl.split('youtu.be/')[1].split('?')[0];
+                } else if (rawUrl.includes('v=')) {
+                    videoId = rawUrl.split('v=')[1].split('&')[0];
+                }
+                finalUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=0`;
+            }
+
+            activeOverlays.push({
+                id: 'el_' + Date.now(),
+                type: type,
+                url: finalUrl,
+                scale: 1,
+                x: 50,
+                y: 50,
+                volume: vol
+            });
+            document.getElementById('video-url-input').value = '';
+            saveAndBroadcast();
+            showToast('Видео добавлено');
+        }
+
+        function clearAllOverlays() {
+            activeOverlays = [];
+            activeMovingId = null;
+            saveAndBroadcast();
+            showToast('Экран очищен');
+        }
+
+        function handleElementClick(e, id) {
+            e.stopPropagation();
+            if (activeMovingId === id) {
+                activeMovingId = null;
+                saveAndBroadcast();
+            } else if (!activeMovingId) {
+                activeMovingId = id;
+                reconcileScene();
+            }
+        }
+
+        function handleGlobalDocumentClick(e) {
+            if (activeMovingId) {
+                const container = document.getElementById('preview-container');
+                if (container && container.contains(e.target)) {
+                    const rect = container.getBoundingClientRect();
+                    const x = Math.max(5, Math.min(95, ((e.clientX - rect.left) / rect.width) * 100));
+                    const y = Math.max(5, Math.min(95, ((e.clientY - rect.top) / rect.height) * 100));
+
+                    const item = activeOverlays.find(i => i.id === activeMovingId);
+                    if (item) { item.x = x; item.y = y; }
+                    activeMovingId = null;
+                    saveAndBroadcast();
+                }
+            }
+        }
+
+        function handleFollowMouseMove(e) {
+            if (!activeMovingId) return;
+            const container = document.getElementById('preview-container');
+            if (!container) return;
+
+            const rect = container.getBoundingClientRect();
+            let x = Math.max(5, Math.min(95, ((e.clientX - rect.left) / rect.width) * 100));
+            let y = Math.max(5, Math.min(95, ((e.clientY - rect.top) / rect.height) * 100));
+
+            const item = activeOverlays.find(i => i.id === activeMovingId);
+            if (item) {
+                item.x = x;
+                item.y = y;
+                const nodes = document.querySelectorAll(`[data-id="${activeMovingId}"]`);
+                nodes.forEach(node => {
+                    node.style.left = x + '%';
+                    node.style.top = y + '%';
+                });
+            }
+        }
+
+        function enableTextInlineEdit(id, textContainer) {
+            const item = activeOverlays.find(i => i.id === id);
+            if (!item || item.type !== 'text') return;
+
+            const currentText = item.content;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentText;
+            input.style.cssText = "background: rgba(9,13,22,0.95); border: 2px solid var(--accent); color: white; padding: 4px 10px; border-radius: 8px; font-weight: bold; outline: none; text-align: center;";
+            
+            textContainer.innerHTML = '';
+            textContainer.appendChild(input);
+            input.focus();
+            input.select();
+
+            const saveChange = () => {
+                const newVal = input.value.trim();
+                if (newVal) {
+                    item.content = newVal;
+                    saveAndBroadcast();
+                } else {
+                    textContainer.innerText = currentText;
+                }
+            };
+
+            input.onblur = saveChange;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') saveChange();
+                else if (e.key === 'Escape') textContainer.innerText = currentText;
+            };
+        }
+
+        function handleWheelScale(e, id) {
+            e.preventDefault();
+            const item = activeOverlays.find(i => i.id === id);
+            if (!item) return;
+
+            if (!item.scale) item.scale = 1;
+            if (e.deltaY < 0) {
+                item.scale = Math.min(item.scale + 0.1, 3);
+            } else {
+                item.scale = Math.max(item.scale - 0.1, 0.3);
+            }
+
+            updateNodeTransform(item.id, item.x, item.y, item.scale);
+            saveAndBroadcast();
+        }
+
+        function updateNodeTransform(id, x, y, scale) {
+            const nodes = document.querySelectorAll(`[data-id="${id}"]`);
+            nodes.forEach(node => {
+                node.style.left = x + '%';
+                node.style.top = y + '%';
+                node.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            });
+        }
+
+        function reconcileScene() {
+            updateCanvasContainer('operator-overlay-canvas', true);
+            updateCanvasContainer('obs-render-canvas', false);
+            updateActiveList();
+        }
+
+        function updateCanvasContainer(containerId, isInteractive) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const existingNodes = container.querySelectorAll('[data-id]');
+            const existingMap = new Map();
+            existingNodes.forEach(node => existingMap.set(node.dataset.id, node));
+
+            const activeIds = new Set(activeOverlays.map(i => i.id));
+            existingMap.forEach((node, id) => { if (!activeIds.has(id)) node.remove(); });
+
+            activeOverlays.forEach(item => {
+                let node = existingMap.get(item.id);
+                const isMoving = (item.id === activeMovingId);
+
+                if (!node) {
+                    node = document.createElement('div');
+                    node.dataset.id = item.id;
+                    node.className = `draggable-item`;
+                    node.style.position = 'absolute';
+                    
+                    if (isInteractive) {
+                        node.onclick = (e) => handleElementClick(e, item.id);
+                        node.onwheel = (e) => handleWheelScale(e, item.id);
+                    }
+
+                    if (item.type === 'text') {
+                        node.innerHTML = `<div class="text-outline-dark text-content" style="${item.style} color: ${item.color}; font-weight: 800; text-align: center; cursor: pointer; white-space: nowrap;">${escapeHtml(item.content)}</div>`;
+                        if (isInteractive) {
+                            const textDiv = node.querySelector('.text-content');
+                            textDiv.title = "Кликните 1 раз, чтобы двигать. Двойной клик — изменить текст";
+                            textDiv.ondblclick = (e) => {
+                                e.stopPropagation();
+                                enableTextInlineEdit(item.id, textDiv);
+                            };
+                        }
+                    } else if (item.type === 'image') {
+                        node.innerHTML = `<img src="${escapeHtml(item.url)}" style="max-width: 400px; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.6);">`;
+                    } else if (item.type === 'video') {
+                        const muteAttr = isInteractive ? 'muted' : '';
+                        node.innerHTML = `<video src="${escapeHtml(item.url)}" autoplay loop ${muteAttr} playsinline style="max-width: 450px; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.6);"></video>`;
+                        const vid = node.querySelector('video');
+                        if (vid && !isInteractive) vid.volume = item.volume || 0.8;
+                    } else if (item.type === 'youtube') {
+                        node.innerHTML = `<div style="position: relative;"><div style="position: absolute; inset: 0; z-index: 10; display: ${isMoving ? 'block' : 'none'};"></div><iframe src="${escapeHtml(item.url)}" style="width: 480px; aspect-ratio: 16/9; border-radius: 12px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.6);"></iframe></div>`;
+                    }
+                    container.appendChild(node);
+                }
+
+                if (isInteractive) {
+                    if (isMoving) node.classList.add('is-moving');
+                    else node.classList.remove('is-moving');
+                }
+
+                updateNodeTransform(item.id, item.x, item.y, item.scale || 1);
+            });
+        }
+
+        function updateActiveList() {
+            const list = document.getElementById('active-elements-list');
+            const badge = document.getElementById('active-count-badge');
+            if (!list || !badge) return;
+
+            badge.innerText = activeOverlays.length;
+            if (activeOverlays.length === 0) {
+                list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px; font-size: 12px;">Экран пуст. Добавьте элемент справа.</div>`;
+                return;
+            }
+
+            list.innerHTML = activeOverlays.map(item => `
+                <div class="active-item">
+                    <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                        <span style="color: var(--accent); font-weight: 800; font-size: 10px; text-transform: uppercase;">[${item.type}]</span>
+                        <span style="color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.content || item.url)}</span>
+                    </div>
+                    <button class="btn btn-red" style="padding: 4px 8px; font-size: 10px;" onclick="removeOverlayItem('${item.id}')"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function removeOverlayItem(id) {
+            if (activeMovingId === id) activeMovingId = null;
+            activeOverlays = activeOverlays.filter(i => i.id !== id);
+            saveAndBroadcast();
+        }
+
+        function onStreamProviderChange() {
+            const provider = document.getElementById('stream-provider').value;
+            const channelName = document.getElementById('twitch-channel-input').value.trim() || 'dell11q';
+            const holder = document.getElementById('preview-bg-holder');
+
+            if (provider === 'twitch') {
+                holder.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channelName}&parent=localhost&muted=true" style="width:150%; height:150%; border:0; margin-left:-25%; margin-top:-25%;"></iframe>`;
+            } else if (provider === 'screenshot') {
+                holder.innerHTML = `<img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1280&q=80" style="opacity: 0.6;">`;
+            } else if (provider === 'testvideo') {
+                holder.innerHTML = `<video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" autoplay loop muted style="opacity: 0.5;"></video>`;
+            }
+        }
+
+        function switchTab(tab) {
+            ['text', 'image', 'video'].forEach(t => {
+                document.getElementById(`tab-btn-${t}`).classList.remove('active');
+                document.getElementById(`tab-content-${t}`).style.display = 'none';
+            });
+            document.getElementById(`tab-btn-${tab}`).classList.add('active');
+            document.getElementById(`tab-content-${tab}`).style.display = 'flex';
+        }
+
+        function copyOverlayLink() {
+            const url = window.location.origin + window.location.pathname + '?mode=overlay';
+            navigator.clipboard.writeText(url);
+            showToast('Ссылка для OBS скопирована!');
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${escapeHtml(msg)}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
