@@ -375,7 +375,7 @@
 
     </main>
 
-    <!-- МОДАЛЬНОЕ ОКНО КОНСТРУКТОРА ВИДЖЕТОВ С КНОПКОЙ "ВЫДАТЬ РАЗМЕР" -->
+    <!-- МОДАЛЬНОЕ ОКНО КОНСТРУКТОРА ВИДЖЕТОВ -->
     <div id="widget-builder-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-obs-card border border-obs-border rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl flex flex-col gap-6 relative">
             <div class="flex justify-between items-center border-b border-slate-800 pb-4">
@@ -435,7 +435,6 @@
                     </div>
                 </div>
 
-                <!-- Блок предпросмотра с кнопкой "Выдать размер" прямо под ним -->
                 <div class="flex flex-col gap-3">
                     <div class="flex flex-col bg-black/60 border border-slate-800 rounded-2xl p-4 items-center justify-center relative min-h-[260px] overflow-hidden w-full">
                         <span class="absolute top-3 left-3 text-[10px] uppercase font-bold text-slate-500 z-10">Живое превью</span>
@@ -445,7 +444,6 @@
                         </div>
                     </div>
 
-                    <!-- Кнопка "Выдать размер" под окном предпросмотра -->
                     <button onclick="openWidgetResizeModal()" class="w-full bg-slate-800 hover:bg-slate-700 border border-indigo-500/50 text-indigo-300 font-bold py-2.5 px-4 rounded-xl shadow transition text-xs flex items-center justify-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-arrows-up-down-left-right text-indigo-400"></i> Выдать размер (Растянуть / Расширить)
                     </button>
@@ -464,7 +462,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ДЕФОРМАЦИИ СО СТРЕЛОЧКАМИ (РАСШИРИТЬ / ВЫТЯНУТЬ) -->
+    <!-- МОДАЛЬНОЕ ОКНО РАСШИРЕНИЯ / ВЫТЯГИВАНИЯ ВИДЖЕТА -->
     <div id="widget-resize-modal" class="hidden fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-obs-card border border-obs-border rounded-2xl w-full max-w-xl p-6 shadow-2xl flex flex-col gap-5">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -479,10 +477,7 @@
             <p class="text-xs text-slate-400">Тяните за стрелочки: боковые стрелки расширяют виджет по ширине, а верхняя/нижняя — вытягивают по высоте.</p>
 
             <div class="relative bg-black/80 border border-slate-800 rounded-xl h-[300px] flex items-center justify-center overflow-hidden select-none">
-                <!-- Интерактивный бокс со стрелочками -->
                 <div id="resize-frame-box" class="relative border-2 border-indigo-500 bg-indigo-950/20 p-4 rounded-xl flex flex-col items-center justify-center shadow-2xl transition-all" style="width: 260px; height: 160px;">
-                    
-                    <!-- Стрелки для расширения/вытягивания -->
                     <div onmousedown="startCustomResize('top', event)" class="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ns-resize shadow"><i class="fa-solid fa-arrow-up"></i></div>
                     <div onmousedown="startCustomResize('bottom', event)" class="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ns-resize shadow"><i class="fa-solid fa-arrow-down"></i></div>
                     <div onmousedown="startCustomResize('left', event)" class="absolute top-1/2 -left-3 -translate-y-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ew-resize shadow"><i class="fa-solid fa-arrow-left"></i></div>
@@ -520,7 +515,6 @@
         let builderMediaSrc = "";
         let builderMediaType = "image";
 
-        // Размеры для конструктора виджета
         let builderWidgetWidth = 260;
         let builderWidgetHeight = 160;
         let isResizingWidgetBox = false;
@@ -827,7 +821,6 @@
             showToast('Виджет добавлен на экран');
         }
 
-        // КОНСТРУКТОР ВИДЖЕТОВ
         function openWidgetBuilderModal() {
             document.getElementById('widget-builder-modal').classList.remove('hidden');
             updateBuilderPreview();
@@ -883,7 +876,6 @@
             document.getElementById('bw-prev-text').innerText = textVal;
         }
 
-        // МОДАЛЬНОЕ ОКНО РАСШИРЕНИЯ / ВЫТЯГИВАНИЯ ВИДЖЕТА
         function openWidgetResizeModal() {
             document.getElementById('widget-resize-modal').classList.remove('hidden');
             updateResizeFramePreview();
@@ -1015,7 +1007,6 @@
             showToast('Виджет удален из списка');
         }
 
-        // МАСШТАБИРОВАНИЕ КОЛЕСИКОМ
         function handleCanvasWheel(e) {
             const target = e.target.closest('[data-id]');
             if (!target) return;
@@ -1035,7 +1026,7 @@
             saveAndBroadcast();
         }
 
-        // МОМЕНТАЛЬНОЕ СЛЕДОВАНИЕ ЗА КУРСОРОМ БЕЗ ТЕЛЕПОРТАЦИИ
+        // --- ИДЕАЛЬНО ПЛАВНОЕ СЛЕДОВАНИЕ ЗА КУРСИВОМ В РЕАЛЬНОМ ВРЕМЕНИ ---
         function startDrag(e, itemId) {
             e.preventDefault();
             isDragging = true;
@@ -1056,7 +1047,6 @@
             const clientX = e.clientX;
             const clientY = e.clientY;
 
-            // Обработка растягивания виджета стрелочками
             if (isResizingWidgetBox) {
                 const deltaX = clientX - startMouseX;
                 const deltaY = clientY - startMouseY;
@@ -1089,7 +1079,7 @@
                 item.x = newX;
                 item.y = newY;
 
-                // Двигаем прямо в реальном времени без задержек
+                // Мгновенное обновление координат прямо под курсором в реальном времени
                 const targetNode = container.querySelector(`[data-id="${dragTargetId}"]`);
                 if (targetNode) {
                     targetNode.style.left = newX + '%';
@@ -1113,7 +1103,7 @@
             if (isDragging) {
                 isDragging = false;
                 dragTargetId = null;
-                saveAndBroadcast(); // Сохранение в базу улетает ровно в момент отпускания мыши
+                saveAndBroadcast(); // Отправка в облако происходит ровно тогда, когда мышка отпущена
             }
         }
 
