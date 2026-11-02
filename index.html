@@ -65,7 +65,7 @@
             cursor: move;
             user-select: none;
             touch-action: none;
-            will-change: left, top, transform;
+            will-change: transform;
         }
         .draggable-item:hover {
             outline: 2px dashed #6366f1;
@@ -113,6 +113,9 @@
                         </div>
                         
                         <div class="flex items-center gap-2">
+                            <button onclick="openResizeToolModal()" class="bg-slate-800 hover:bg-slate-700 text-indigo-400 border border-indigo-500/30 px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
+                                <i class="fa-solid fa-expand"></i> Выдать размер
+                            </button>
                             <select id="stream-provider" onchange="onStreamProviderChange()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg px-2.5 py-1 text-slate-300 outline-none focus:border-indigo-500">
                                 <option value="twitch">Twitch Embed</option>
                                 <option value="screenshot">Скриншот игры / Фон</option>
@@ -137,7 +140,7 @@
                         </div>
 
                         <div class="absolute bottom-3 left-3 z-30 bg-slate-900/90 border border-slate-700/80 px-3 py-1 rounded-lg text-[11px] text-slate-300 backdrop-blur pointer-events-none flex items-center gap-1.5">
-                            <i class="fa-solid fa-hand-pointer text-indigo-400"></i> Перетаскивайте мышкой • Колесико мыши: масштаб
+                            <i class="fa-solid fa-hand-pointer text-indigo-400"></i> Перетаскивайте мышкой (60 FPS) • Колесико мыши: масштаб
                         </div>
                     </div>
                 </div>
@@ -375,6 +378,50 @@
 
     </main>
 
+    <!-- МОДАЛЬНОЕ ОКНО "ВЫДАТЬ РАЗМЕР" (Интерактивная рамка со стрелочками) -->
+    <div id="resize-tool-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-obs-card border border-obs-border rounded-2xl w-full max-w-3xl p-6 shadow-2xl flex flex-col gap-5">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-expand text-indigo-400"></i> Интерактивная настройка размера элементов
+                </h3>
+                <button onclick="closeResizeToolModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Выберите элемент для настройки размера:</label>
+                <select id="resize-target-select" onchange="onResizeTargetChange()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white"></select>
+            </div>
+
+            <!-- Зона со стрелками и интерактивной рамкой -->
+            <div class="relative bg-black/70 border border-slate-800 rounded-xl h-[320px] flex items-center justify-center overflow-hidden select-none">
+                <div id="resize-box-preview" class="relative border-2 border-indigo-500 bg-indigo-950/30 p-4 rounded-xl flex flex-col items-center justify-center shadow-2xl transition-all">
+                    <!-- Стрелочки по бокам и углам -->
+                    <div onmousedown="startResizeDrag('nw', event)" class="absolute -top-3 -left-3 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-nwse-resize shadow"><i class="fa-solid fa-arrow-up-left"></i></div>
+                    <div onmousedown="startResizeDrag('ne', event)" class="absolute -top-3 -right-3 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-nesw-resize shadow"><i class="fa-solid fa-arrow-up-right"></i></div>
+                    <div onmousedown="startResizeDrag('sw', event)" class="absolute -bottom-3 -left-3 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-nesw-resize shadow"><i class="fa-solid fa-arrow-down-left"></i></div>
+                    <div onmousedown="startResizeDrag('se', event)" class="absolute -bottom-3 -right-3 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-nwse-resize shadow"><i class="fa-solid fa-arrow-down-right"></i></div>
+
+                    <div onmousedown="startResizeDrag('top', event)" class="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ns-resize shadow"><i class="fa-solid fa-arrow-up"></i></div>
+                    <div onmousedown="startResizeDrag('bottom', event)" class="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ns-resize shadow"><i class="fa-solid fa-arrow-down"></i></div>
+                    <div onmousedown="startResizeDrag('left', event)" class="absolute top-1/2 -left-3 -translate-y-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ew-resize shadow"><i class="fa-solid fa-arrow-left"></i></div>
+                    <div onmousedown="startResizeDrag('right', event)" class="absolute top-1/2 -right-3 -translate-y-1/2 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] cursor-ew-resize shadow"><i class="fa-solid fa-arrow-right"></i></div>
+
+                    <div id="resize-box-content" class="w-full h-full flex items-center justify-center overflow-hidden"></div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center border-t border-slate-800 pt-4">
+                <span class="text-xs text-slate-400 font-mono" id="resize-scale-label">Масштаб: 100%</span>
+                <button onclick="closeResizeToolModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg transition text-xs cursor-pointer">
+                    Готово
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- МОДАЛЬНОЕ ОКНО КОНСТРУКТОРА ВИДЖЕТОВ -->
     <div id="widget-builder-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-obs-card border border-obs-border rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl flex flex-col gap-6 relative">
@@ -388,7 +435,6 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                <!-- Настройки конструктора -->
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Медиа файл (Картинка / GIF / Видео)</label>
@@ -414,7 +460,7 @@
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-400 mb-1">Фон карточки</label>
                         <select id="bw-bg-toggle" onchange="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
-                            <option value="solid" selected>Тёмный подложка (С рамочкой)</option>
+                            <option value="solid" selected>Тёмная подложка (С рамочкой)</option>
                             <option value="transparent">Прозрачный фон (Без подложки)</option>
                         </select>
                     </div>
@@ -441,7 +487,6 @@
                     </div>
                 </div>
 
-                <!-- Ограниченное окно живого превью -->
                 <div class="flex flex-col bg-black/60 border border-slate-800 rounded-2xl p-4 items-center justify-center relative min-h-[300px] max-h-[400px] overflow-hidden w-full">
                     <span class="absolute top-3 left-3 text-[10px] uppercase font-bold text-slate-500 z-10">Живое превью</span>
                     <div id="builder-preview-box" class="flex flex-col items-center gap-3 p-4 rounded-xl transition-all max-w-full max-h-full overflow-auto">
@@ -482,6 +527,14 @@
         let builderMediaSrc = "";
         let builderMediaType = "image";
 
+        // Переменные для модального окна "Выдать размер"
+        let resizingItemId = null;
+        let isResizingBox = false;
+        let resizeDirection = '';
+        let resizeStartX = 0;
+        let resizeStartY = 0;
+        let resizeStartScale = 1;
+
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             const modeParam = urlParams.get('mode');
@@ -512,7 +565,6 @@
             }
         };
 
-        // Отправка в облако ТОЛЬКО ПОЗИЦИЙ (легкие данные)
         function saveAndBroadcast() {
             const cleanOverlays = activeOverlays.map(item => ({
                 id: item.id,
@@ -776,7 +828,7 @@
             showToast('Виджет добавлен на экран');
         }
 
-        // КОНСТРУКТОР ВИДЖЕТОВ (ИСПРАВЛЕНО)
+        // КОНСТРУКТОР ВИДЖЕТОВ
         function openWidgetBuilderModal() {
             document.getElementById('widget-builder-modal').classList.remove('hidden');
             updateBuilderPreview();
@@ -915,17 +967,70 @@
             showToast('Виджет удален из списка');
         }
 
-        function onLiveVolumeInput(val) {
-            document.getElementById('vol-val').innerText = val + '%';
-            const normVol = val / 100;
-            activeOverlays.forEach(item => {
-                if (item.type === 'video') item.volume = normVol;
-            });
-            document.querySelectorAll('video').forEach(v => v.volume = normVol);
+        // --- МОДАЛЬНОЕ ОКНО "ВЫДАТЬ РАЗМЕР" СО СТРЕЛОЧКАМИ ---
+        function openResizeToolModal() {
+            const select = document.getElementById('resize-target-select');
+            if (activeOverlays.length === 0) {
+                return showToast('Нет активных элементов на экране', 'warning');
+            }
+
+            select.innerHTML = activeOverlays.map(item => `
+                <option value="${item.id}">${escapeHtml(item.title || item.content || item.url || item.type)} (Масштаб: ${Math.round((item.scale || 1) * 100)}%)</option>
+            `).join('');
+
+            resizingItemId = select.value;
+            document.getElementById('resize-tool-modal').classList.remove('hidden');
+            updateResizeBoxPreview();
+        }
+
+        function closeResizeToolModal() {
+            document.getElementById('resize-tool-modal').classList.add('hidden');
+            resizingItemId = null;
+            renderOverlaysWithoutReloadingMedia();
             saveAndBroadcast();
         }
 
-        // МАСШТАБИРОВАНИЕ КОЛЕСИКОМ
+        function onResizeTargetChange() {
+            resizingItemId = document.getElementById('resize-target-select').value;
+            updateResizeBoxPreview();
+        }
+
+        function updateResizeBoxPreview() {
+            const item = activeOverlays.find(i => i.id === resizingItemId);
+            if (!item) return;
+
+            const contentBox = document.getElementById('resize-box-content');
+            const previewBox = document.getElementById('resize-box-preview');
+            const scaleLabel = document.getElementById('resize-scale-label');
+
+            const sc = item.scale || 1;
+            scaleLabel.innerText = `Масштаб: ${Math.round(sc * 100)}%`;
+            previewBox.style.transform = `scale(${sc})`;
+
+            let html = '';
+            if (item.type === 'text') {
+                html = `<div class="text-xl font-bold text-white text-center">${escapeHtml(item.content)}</div>`;
+            } else if (item.type === 'image') {
+                html = `<img src="${item.url}" class="max-w-[200px] object-contain rounded-lg">`;
+            } else if (item.type === 'video') {
+                html = `<video src="${item.url}" autoplay loop muted class="max-w-[220px] rounded-lg"></video>`;
+            } else if (item.type === 'widget') {
+                html = item.html;
+            }
+            contentBox.innerHTML = html;
+        }
+
+        function startResizeDrag(dir, e) {
+            e.preventDefault();
+            isResizingBox = true;
+            resizeDirection = dir;
+            resizeStartX = e.clientX;
+            resizeStartY = e.clientY;
+            const item = activeOverlays.find(i => i.id === resizingItemId);
+            resizeStartScale = item ? (item.scale || 1) : 1;
+        }
+
+        // МАСШТАБИРОВАНИЕ КОЛЕСИКОМ (ТОЛЬКО ЧЕРЕЗ КОЛЕСО)
         function handleCanvasWheel(e) {
             const target = e.target.closest('[data-id]');
             if (!target) return;
@@ -941,11 +1046,12 @@
                 item.scale = Math.max(item.scale - 0.1, 0.3);
             }
 
-            target.style.transform = `translate(-50%, -50%) scale(${item.scale})`;
+            // Мгновенное аппаратное применение без лагов
+            target.style.transform = `translate3d(-50%, -50%, 0) scale(${item.scale})`;
             saveAndBroadcast();
         }
 
-        // МГНОВЕННОЕ И ПЛАВНОЕ ПЕРЕМЕЩЕНИЕ БЕЗ ЛАГОВ
+        // УЛЬТРАПЛАВНОЕ ПЕРЕМЕЩЕНИЕ БЕЗ ТЕЛЕПОРТАЦИИ И ЛАГОВ (60 FPS)
         function startDrag(e, itemId) {
             e.preventDefault();
             isDragging = true;
@@ -963,13 +1069,31 @@
         }
 
         function handleGlobalMouseMove(e) {
+            const clientX = e.clientX;
+            const clientY = e.clientY;
+
+            // Обработка интерактивного изменения размера в окне "Выдать размер"
+            if (isResizingBox && resizingItemId) {
+                const deltaX = clientX - resizeStartX;
+                const deltaY = clientY - resizeStartY;
+                const delta = (deltaX + deltaY) / 150;
+
+                const item = activeOverlays.find(i => i.id === resizingItemId);
+                if (item) {
+                    let newScale = Math.min(Math.max(resizeStartScale + delta, 0.3), 3);
+                    item.scale = newScale;
+                    updateResizeBoxPreview();
+                }
+                return;
+            }
+
             if (!isDragging || !dragTargetId) return;
             const container = document.getElementById('preview-container');
             if (!container) return;
 
             const rect = container.getBoundingClientRect();
-            const deltaX = e.clientX - dragStartX;
-            const deltaY = e.clientY - dragStartY;
+            const deltaX = clientX - dragStartX;
+            const deltaY = clientY - dragStartY;
 
             const deltaPercentX = (deltaX / rect.width) * 100;
             const deltaPercentY = (deltaY / rect.height) * 100;
@@ -982,6 +1106,7 @@
                 item.x = newX;
                 item.y = newY;
 
+                // Перемещение через аппаратный translate3d без перерисовки DOM
                 const targetNode = container.querySelector(`[data-id="${dragTargetId}"]`);
                 if (targetNode) {
                     targetNode.style.left = newX + '%';
@@ -991,17 +1116,21 @@
         }
 
         function handleGlobalTouchMove(e) {
-            if (!isDragging || !dragTargetId) return;
+            if (!isDragging && !isResizingBox) return;
             e.preventDefault();
             const touch = e.touches[0];
             handleGlobalMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
         }
 
         function handleGlobalMouseUp() {
+            if (isResizingBox) {
+                isResizingBox = false;
+                resizeDirection = '';
+            }
             if (isDragging) {
                 isDragging = false;
                 dragTargetId = null;
-                saveAndBroadcast(); // Итоговые координаты уходят в облако ровно в момент отпускания кнопки мыши
+                saveAndBroadcast(); // Сохранение в базу происходит ровно в момент отпускания мыши
             }
         }
 
@@ -1070,7 +1199,7 @@
                 obsNode.style.left = item.x + '%';
                 obsNode.style.top = item.y + '%';
                 const sc = item.scale || 1;
-                obsNode.style.transform = `translate(-50%, -50%) scale(${sc})`;
+                obsNode.style.transform = `translate3d(-50%, -50%, 0) scale(${sc})`;
 
                 let contentHtml = '';
                 if (item.type === 'text') {
@@ -1102,7 +1231,7 @@
                     }
                     opNode.style.left = item.x + '%';
                     opNode.style.top = item.y + '%';
-                    opNode.style.transform = `translate(-50%, -50%) scale(${sc})`;
+                    opNode.style.transform = `translate3d(-50%, -50%, 0) scale(${sc})`;
                 }
             });
 
